@@ -1,0 +1,238 @@
+:root {
+    --bg: #17212b;
+    --bg-card: #232e3c;
+    --text: #ffffff;
+    --text-muted: #7d8b99;
+    --accent: #5288c1;
+    --accent-hover: #4a7ab0;
+    --bar-bg: #1c2733;
+    --green: #4fc26a;
+    --yellow: #f0b232;
+    --red: #e05a5a;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+    height: 100%;
+}
+
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    font-size: 16px;
+    overflow: hidden;
+    user-select: none;
+}
+
+.screen {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* ---------- Онбординг ---------- */
+
+.onboarding {
+    justify-content: center;
+    align-items: center;
+    padding: 24px;
+}
+
+.onboarding__content {
+    width: 100%;
+    max-width: 320px;
+    text-align: center;
+}
+
+.onboarding__emoji {
+    font-size: 72px;
+    margin-bottom: 16px;
+    animation: bob 2s ease-in-out infinite;
+}
+
+@keyframes bob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+
+.onboarding__title {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.onboarding__text {
+    color: var(--text-muted);
+    margin-bottom: 24px;
+}
+
+.onboarding__input {
+    width: 100%;
+    padding: 14px 16px;
+    background: var(--bg-card);
+    border: 2px solid transparent;
+    border-radius: 12px;
+    color: var(--text);
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.15s;
+    margin-bottom: 12px;
+}
+
+.onboarding__input:focus {
+    border-color: var(--accent);
+}
+
+.onboarding__button {
+    width: 100%;
+    padding: 14px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.onboarding__button:hover {
+    background: var(--accent-hover);
+}
+
+.onboarding__button:disabled {
+    background: var(--bg-card);
+    color: var(--text-muted);
+    cursor: not-allowed;
+}
+
+/* ---------- Основной экран ---------- */
+
+.game {
+    padding: 16px;
+    gap: 16px;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 4px 0;
+}
+
+.header__name {
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.header__coins {
+    font-size: 16px;
+    color: var(--yellow);
+    font-weight: 600;
+}
+
+.stats {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: var(--bg-card);
+    padding: 12px 16px;
+    border-radius: 16px;
+}
+
+.stat {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.stat__icon {
+    font-size: 18px;
+    width: 24px;
+    text-align: center;
+}
+
+.stat__bar {
+    flex: 1;
+    height: 8px;
+    background: var(--bar-bg);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.stat__fill {
+    height: 100%;
+    background: var(--green);
+    border-radius: 4px;
+    transition: width 0.3s ease, background 0.3s ease;
+}
+
+.stat__fill.warn {
+    background: var(--yellow);
+}
+
+.stat__fill.crit {
+    background: var(--red);
+}
+
+.pet {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 0;
+}
+
+.pet__sprite {
+    max-width: 70%;
+    max-height: 100%;
+    object-fit: contain;
+    image-rendering: pixelated;
+    animation: bob 3s ease-in-out infinite;
+}
+
+.actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.action {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 14px 8px;
+    background: var(--bg-card);
+    border: none;
+    border-radius: 14px;
+    color: var(--text);
+    font-size: 24px;
+    cursor: pointer;
+    transition: transform 0.1s, background 0.15s;
+}
+
+.action span {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.action:active {
+    transform: scale(0.96);
+    background: #2a3746;
+}
