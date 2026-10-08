@@ -133,10 +133,14 @@
     });
 
     function fatal(msg) {
+        const info = tg
+            ? `platform: ${tg.platform || "?"}, version: ${tg.version || "?"}, initData длина: ${(tg.initData || "").length}`
+            : "tg не определён";
         document.body.innerHTML =
-            '<div style="padding:24px;color:#fff;font-family:sans-serif;">' +
+            '<div style="padding:24px;color:#fff;font-family:sans-serif;font-size:14px;">' +
             '<h2>⚠️ ' + msg + '</h2>' +
-            '<p style="color:#7d8b99;">Открой Mini App из бота в Telegram.</p>' +
+            '<p style="color:#7d8b99;">' + info + '</p>' +
+            '<p style="color:#7d8b99;margin-top:8px;">Открой Mini App из бота в Telegram.</p>' +
             "</div>";
     }
 
