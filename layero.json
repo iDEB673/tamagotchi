@@ -1,4 +1,4 @@
 {
-  "runtime": "python_web",
-  "start_command": "bash start.sh"
+  "runtime": "python",
+  "startCommand": "bash start.sh"
 }

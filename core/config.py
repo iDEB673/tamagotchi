@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     bot_token: str
     database_url: str
     webapp_url: str = ""
+    proxy_url: str = ""  # для локалки, на сервере пустой
 
 
 settings = Settings()

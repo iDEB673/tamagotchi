@@ -21,13 +21,19 @@ async def main() -> None:
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
 
-    session = AiohttpSession(proxy="socks5://127.0.0.1:10808")
+    if settings.proxy_url:
+        session = AiohttpSession(proxy=settings.proxy_url)
+        bot = Bot(
+            token=settings.bot_token,
+            session=session,
+            default=DefaultBotProperties(parse_mode=ParseMode.HTML),
+        )
+    else:
+        bot = Bot(
+            token=settings.bot_token,
+            default=DefaultBotProperties(parse_mode=ParseMode.HTML),
+        )
 
-    bot = Bot(
-        token=settings.bot_token,
-        session=session,
-        default=DefaultBotProperties(parse_mode=ParseMode.HTML),
-    )
     dp = Dispatcher()
     dp.include_router(start.router)
 
