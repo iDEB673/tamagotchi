@@ -1,4 +1,5 @@
 import asyncio
+import sys
 from logging.config import fileConfig
 
 from sqlalchemy import pool
@@ -7,15 +8,17 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
 
-# --- твои импорты ---
+# --- фикс для Windows ДО любых импортов, которые создают engine ---
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+# --- мои импорты ---
 from core.config import settings
 from core.db import Base
-# важно: импортируй модели, чтобы они зарегистрировались в Base.metadata
 from models import pet, user  # noqa: F401
 
 config = context.config
 
-# подставляем URL из .env, а не из alembic.ini
 config.set_main_option("sqlalchemy.url", settings.database_url)
 
 if config.config_file_name is not None:
