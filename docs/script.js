@@ -5,6 +5,8 @@
         tg.expand();
     }
 
+    const API_BASE = "https://tamagotchi.layero.app";
+
     const state = {
         pet: null,
         coins: 0,
@@ -35,7 +37,7 @@
         if (tg?.initData) {
             headers["Authorization"] = "tma " + tg.initData;
         }
-        const res = await fetch(path, { ...options, headers });
+        const res = await fetch(API_BASE + path, { ...options, headers });
         if (!res.ok) {
             const text = await res.text();
             throw new Error(`${res.status} ${text}`);
@@ -134,17 +136,12 @@
 
     function fatal(msg) {
         const platform = tg?.platform || "tg не определён";
-        const version = tg?.version || "?";
         const initLen = (tg?.initData || "").length;
-        const initStart = (tg?.initData || "").slice(0, 30) || "(пусто)";
-
         document.body.innerHTML =
-            '<div style="padding:24px;color:#fff;font-family:monospace;font-size:14px;">' +
+            '<div style="padding:24px;color:#fff;font-family:sans-serif;">' +
             '<h2>⚠️ ' + msg + '</h2>' +
-            '<p>platform: ' + platform + '</p>' +
-            '<p>version: ' + version + '</p>' +
-            '<p>initData длина: ' + initLen + '</p>' +
-            '<p>initData начало: ' + initStart + '</p>' +
+            '<p style="color:#7d8b99;">platform: ' + platform + ', initData длина: ' + initLen + '</p>' +
+            '<p style="color:#7d8b99;">Открой Mini App из бота в Telegram.</p>' +
             "</div>";
     }
 
