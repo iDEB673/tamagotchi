@@ -25,6 +25,6 @@ async def health():
 
 
 # Раздача Mini App (фронта) с того же домена
-WEBAPP_DIR = Path(__file__).resolve().parent.parent / "webapp"
+WEBAPP_DIR = Path(__file__).resolve().parent.parent / "docs"
 if WEBAPP_DIR.exists():
     app.mount("/app", StaticFiles(directory=WEBAPP_DIR, html=True), name="webapp")
