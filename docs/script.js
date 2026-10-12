@@ -5,13 +5,25 @@
         tg.expand();
     }
 
-    const API_BASE = "https://tamagotchi.layero.app";
+    const STORAGE_KEY = "tamagotchi_demo_v1";
 
-    const state = {
-        pet: null,
-        coins: 0,
-        user: null,
-    };
+    const defaultState = () => ({
+        petName: null,
+        coins: 100,
+        stats: { hunger: 100, happiness: 100, energy: 100, cleanliness: 100 },
+    });
+
+    let state = load() || defaultState();
+
+    function load() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            return raw ? JSON.parse(raw) : null;
+        } catch { return null; }
+    }
+    function save() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
 
     const onboardingEl = document.getElementById("onboarding");
     const gameEl = document.getElementById("game");
@@ -29,69 +41,21 @@
         cleanliness: document.getElementById("bar-cleanliness"),
     };
 
-    async function api(path, options = {}) {
-        const headers = {
-            "Content-Type": "application/json",
-            ...(options.headers || {}),
-        };
-        if (tg?.initData) {
-            headers["Authorization"] = "tma " + tg.initData;
-        }
-        const res = await fetch(API_BASE + path, { ...options, headers });
-        if (!res.ok) {
-            const text = await res.text();
-            throw new Error(`${res.status} ${text}`);
-        }
-        return res.json();
-    }
-
-    async function loadMe() {
-        state.user = await api("/api/me");
-        state.coins = state.user.coins;
-    }
-
-    async function loadPet() {
-        state.pet = await api("/api/pet");
-    }
-
-    async function setName(name) {
-        state.pet = await api("/api/pet/name", {
-            method: "POST",
-            body: JSON.stringify({ name }),
-        });
-    }
-
-    async function doAction(action) {
-        const res = await api("/api/action", {
-            method: "POST",
-            body: JSON.stringify({ action }),
-        });
-        state.pet = res.pet;
-        state.coins = res.coins;
-        render();
-        if (tg) tg.HapticFeedback?.impactOccurred("light");
-    }
-
     function render() {
-        if (!state.pet) return;
-
-        petNameEl.textContent = state.pet.name || "Питомец";
+        petNameEl.textContent = state.petName || "Питомец";
         coinsEl.textContent = state.coins;
-
         for (const key of Object.keys(bars)) {
-            const value = Math.max(0, Math.min(100, state.pet[key]));
+            const value = Math.max(0, Math.min(100, state.stats[key]));
             bars[key].style.width = value + "%";
             bars[key].classList.remove("warn", "crit");
             if (value <= 20) bars[key].classList.add("crit");
             else if (value <= 50) bars[key].classList.add("warn");
         }
-
         let sprite = "idle";
-        if (state.pet.hunger <= 30) sprite = "hungry";
-        else if (state.pet.cleanliness <= 30) sprite = "dirty";
-        else if (state.pet.energy <= 30) sprite = "sleeping";
-        else if (state.pet.happiness >= 80) sprite = "happy";
-
+        if (state.stats.hunger <= 30) sprite = "hungry";
+        else if (state.stats.cleanliness <= 30) sprite = "dirty";
+        else if (state.stats.energy <= 30) sprite = "sleeping";
+        else if (state.stats.happiness >= 80) sprite = "happy";
         petSpriteEl.src = `public/sprites/${sprite}.png`;
     }
 
@@ -99,27 +63,19 @@
         onboardingEl.classList.remove("hidden");
         gameEl.classList.add("hidden");
         nameInput.focus();
-
         nameConfirm.disabled = true;
         nameInput.addEventListener("input", () => {
             nameConfirm.disabled = nameInput.value.trim().length === 0;
         });
-
-        const confirm = async () => {
+        const confirm = () => {
             const name = nameInput.value.trim();
             if (!name) return;
-            try {
-                await setName(name);
-                showGame();
-            } catch (e) {
-                alert("Ошибка: " + e.message);
-            }
+            state.petName = name;
+            save();
+            showGame();
         };
-
         nameConfirm.addEventListener("click", confirm);
-        nameInput.addEventListener("keydown", (e) => {
-            if (e.key === "Enter") confirm();
-        });
+        nameInput.addEventListener("keydown", (e) => { if (e.key === "Enter") confirm(); });
     }
 
     function showGame() {
@@ -128,40 +84,29 @@
         render();
     }
 
+    const ACTIONS = {
+        feed: { hunger: +25, happiness: +3, cleanliness: -5 },
+        play: { happiness: +20, energy: -10, hunger: -5 },
+        sleep: { energy: +30, hunger: -5 },
+        wash: { cleanliness: +30, happiness: +2, energy: -3 },
+    };
+
+    function applyAction(name) {
+        const deltas = ACTIONS[name];
+        if (!deltas) return;
+        for (const [key, delta] of Object.entries(deltas)) {
+            state.stats[key] = Math.max(0, Math.min(100, state.stats[key] + delta));
+        }
+        state.coins = Math.max(0, state.coins - 1);
+        save();
+        render();
+        if (tg) tg.HapticFeedback?.impactOccurred("light");
+    }
+
     actionButtons.forEach((btn) => {
-        btn.addEventListener("click", () => {
-            doAction(btn.dataset.action).catch((e) => alert(e.message));
-        });
+        btn.addEventListener("click", () => applyAction(btn.dataset.action));
     });
 
-    function fatal(msg) {
-        const platform = tg?.platform || "tg не определён";
-        const initLen = (tg?.initData || "").length;
-        document.body.innerHTML =
-            '<div style="padding:24px;color:#fff;font-family:sans-serif;">' +
-            '<h2>⚠️ ' + msg + '</h2>' +
-            '<p style="color:#7d8b99;">platform: ' + platform + ', initData длина: ' + initLen + '</p>' +
-            '<p style="color:#7d8b99;">Открой Mini App из бота в Telegram.</p>' +
-            "</div>";
-    }
-
-    async function init() {
-        if (!tg?.initData) {
-            fatal("Нет данных Telegram");
-            return;
-        }
-        try {
-            await loadMe();
-            await loadPet();
-            if (!state.pet || state.pet.name === "Питомец") {
-                showOnboarding();
-            } else {
-                showGame();
-            }
-        } catch (e) {
-            fatal("Ошибка: " + e.message);
-        }
-    }
-
-    init();
+    if (!state.petName) showOnboarding();
+    else showGame();
 })();
