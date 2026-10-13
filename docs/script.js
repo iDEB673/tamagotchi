@@ -7,12 +7,7 @@
 
     const STORAGE_KEY = "tamagotchi_demo_v4";
 
-    const DECAY_PER_HOUR = {
-        hunger: 5,
-        happiness: 4,
-        energy: 3,
-        cleanliness: 3,
-    };
+    const DECAY_PER_HOUR = { hunger: 5, happiness: 4, energy: 3, cleanliness: 3 };
 
     const ACTIONS = {
         feed: { hunger: +25, happiness: +3, cleanliness: -5, cost: 1 },
@@ -29,12 +24,7 @@
     const SLEEP_DEEP_MS = 10 * 60 * 1000;
     const SLEEP_FAST_GAIN = 0.5;
     const SLEEP_DEEP_GAIN = 1.0;
-
-    const SLEEP_DECAY_PER_MIN = {
-        hunger: 2.0,
-        happiness: 1.5,
-        cleanliness: 1.5,
-    };
+    const SLEEP_DECAY_PER_MIN = { hunger: 2.0, happiness: 1.5, cleanliness: 1.5 };
 
     const BB_SIZE = 8;
     const BB_ENERGY_COST = 15;
@@ -78,39 +68,28 @@
             return raw ? JSON.parse(raw) : null;
         } catch { return null; }
     }
-
     function save() {
         state.lastUpdate = Date.now();
-        try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-        } catch (e) {
-            console.warn("localStorage недоступен:", e);
-        }
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+        catch (e) { console.warn("localStorage недоступен:", e); }
     }
 
     function applyDecay() {
-        const now = Date.now();
-        const elapsedMs = now - (state.lastUpdate || now);
+        const elapsedMs = Date.now() - (state.lastUpdate || Date.now());
         const hours = elapsedMs / (1000 * 60 * 60);
         if (hours <= 0) return;
         for (const [key, rate] of Object.entries(DECAY_PER_HOUR)) {
             const delta = Math.floor(rate * hours);
-            if (delta > 0) {
-                state.stats[key] = Math.max(0, state.stats[key] - delta);
-            }
+            if (delta > 0) state.stats[key] = Math.max(0, state.stats[key] - delta);
         }
     }
 
     function applySleepDecay() {
         if (!state.sleepStartedAt) return 0;
         const elapsedMin = (Date.now() - state.sleepStartedAt) / 60000;
-        if (elapsedMin <= 0) {
-            state.sleepStartedAt = null;
-            return 0;
-        }
+        if (elapsedMin <= 0) { state.sleepStartedAt = null; return 0; }
         for (const [key, rate] of Object.entries(SLEEP_DECAY_PER_MIN)) {
-            const delta = rate * elapsedMin;
-            state.stats[key] = Math.max(0, state.stats[key] - delta);
+            state.stats[key] = Math.max(0, state.stats[key] - rate * elapsedMin);
         }
         state.sleepStartedAt = null;
         return elapsedMin;
@@ -118,8 +97,7 @@
 
     function checkSleepOnLoad() {
         if (!state.sleepUntil) return;
-        const now = Date.now();
-        if (now >= state.sleepUntil) {
+        if (Date.now() >= state.sleepUntil) {
             const gain = state.sleepGain || 0;
             state.stats.energy = Math.max(0, Math.min(100, state.stats.energy + Math.round(gain * 100)));
             applySleepDecay();
@@ -149,28 +127,17 @@
     const actionButtons = document.querySelectorAll(".action[data-action]");
 
     const bars = {
-        hunger: $("bar-hunger"),
-        happiness: $("bar-happiness"),
-        energy: $("bar-energy"),
-        cleanliness: $("bar-cleanliness"),
+        hunger: $("bar-hunger"), happiness: $("bar-happiness"),
+        energy: $("bar-energy"), cleanliness: $("bar-cleanliness"),
     };
     const nums = {
-        hunger: $("num-hunger"),
-        happiness: $("num-happiness"),
-        energy: $("num-energy"),
-        cleanliness: $("num-cleanliness"),
+        hunger: $("num-hunger"), happiness: $("num-happiness"),
+        energy: $("num-energy"), cleanliness: $("num-cleanliness"),
     };
 
     function hideAll() {
-        onboardingEl.classList.add("hidden");
-        gameEl.classList.add("hidden");
-        chooserEl.classList.add("hidden");
-        introEl.classList.add("hidden");
-        minigameEl.classList.add("hidden");
-        bbEl.classList.add("hidden");
-        sleepModalEl.classList.add("hidden");
-        mgModalEl.classList.add("hidden");
-        bbModalEl.classList.add("hidden");
+        [onboardingEl, gameEl, chooserEl, introEl, minigameEl, bbEl, sleepModalEl, mgModalEl, bbModalEl]
+            .forEach(el => el && el.classList.add("hidden"));
     }
 
     function isSleeping() {
@@ -212,20 +179,16 @@
             petSpriteEl.src = `public/sprites/${sprite}.png`;
         }
 
-        actionButtons.forEach((btn) => {
-            btn.disabled = sleeping;
-        });
+        actionButtons.forEach((btn) => { btn.disabled = sleeping; });
     }
 
     function showOnboarding() {
         hideAll();
         onboardingEl.classList.remove("hidden");
-
         nameConfirm.disabled = true;
         nameInput.addEventListener("input", () => {
             nameConfirm.disabled = nameInput.value.trim().length === 0;
         });
-
         const confirm = () => {
             const name = nameInput.value.trim();
             if (!name) return;
@@ -233,11 +196,7 @@
             save();
             showGame();
         };
-
-        nameConfirm.addEventListener("click", (e) => {
-            e.preventDefault();
-            confirm();
-        });
+        nameConfirm.addEventListener("click", (e) => { e.preventDefault(); confirm(); });
         nameInput.addEventListener("keydown", (e) => {
             if (e.key === "Enter") { e.preventDefault(); confirm(); }
         });
@@ -259,12 +218,10 @@
         const action = ACTIONS[name];
         if (!action) return;
         if (isSleeping()) return;
-
         if (action.cost > 0 && state.coins < action.cost) {
             alert(`Нужно ${action.cost} монет. Заработай в мини-игре!`);
             return;
         }
-
         for (const [key, delta] of Object.entries(action)) {
             if (key === "cost") continue;
             state.stats[key] = Math.max(0, Math.min(100, state.stats[key] + delta));
@@ -284,14 +241,19 @@
         });
     });
 
-    // ---------- Кликер: превью ----------
+    // ---------- Кликер ----------
+
+    let mgEndAt = 0, mgScore = 0, mgActive = false, mgTickerId = null, mgTimeoutId = null;
+
+    const mgTimerEl = $("mgTimer"), mgEnergyEl = $("mgEnergy"), mgScoreEl = $("mgScore");
+    const mgClickBtn = $("mgClickBtn"), mgModalTitle = $("mgResultTitle");
+    const mgModalReward = $("mgResultReward"), mgModalSub = $("mgResultSub");
+    const mgModalBack = $("mgResultBack"), mgModalRepeat = $("mgResultRepeat");
 
     function openMinigameIntro() {
         if (isSleeping()) return;
-
         const energyNow = Math.round(state.stats.energy);
         $("introEnergy").textContent = energyNow;
-
         const startBtn = $("introStart");
         if (energyNow < MG_ENERGY_COST) {
             startBtn.disabled = true;
@@ -300,7 +262,6 @@
             startBtn.disabled = false;
             startBtn.textContent = `Начать (−${MG_ENERGY_COST} ⚡)`;
         }
-
         hideAll();
         introEl.classList.remove("hidden");
     }
@@ -311,35 +272,13 @@
         save();
         startMinigame();
     });
-
     $("introCancel").addEventListener("click", () => showGame());
-
-    // ---------- Кликер ----------
-
-    let mgEndAt = 0;
-    let mgScore = 0;
-    let mgActive = false;
-    let mgTickerId = null;
-    let mgTimeoutId = null;
-
-    const mgTimerEl = $("mgTimer");
-    const mgEnergyEl = $("mgEnergy");
-    const mgScoreEl = $("mgScore");
-    const mgClickBtn = $("mgClickBtn");
-    const mgModalTitle = $("mgResultTitle");
-    const mgModalReward = $("mgResultReward");
-    const mgModalSub = $("mgResultSub");
-    const mgModalBack = $("mgResultBack");
-    const mgModalRepeat = $("mgResultRepeat");
 
     function startMinigame() {
         hideAll();
         minigameEl.classList.remove("hidden");
-
-        mgScore = 0;
-        mgActive = true;
+        mgScore = 0; mgActive = true;
         mgEndAt = Date.now() + MG_DURATION * 1000;
-
         mgScoreEl.textContent = "0";
         mgTimerEl.textContent = MG_DURATION;
         mgEnergyEl.textContent = Math.round(state.stats.energy);
@@ -348,18 +287,12 @@
         mgTickerId = setInterval(() => {
             if (!mgActive) return;
             const leftMs = mgEndAt - Date.now();
-            if (leftMs <= 0) {
-                mgTimerEl.textContent = "0";
-                endMinigame();
-                return;
-            }
+            if (leftMs <= 0) { mgTimerEl.textContent = "0"; endMinigame(); return; }
             mgTimerEl.textContent = Math.ceil(leftMs / 1000);
         }, 100);
 
         if (mgTimeoutId) clearTimeout(mgTimeoutId);
-        mgTimeoutId = setTimeout(() => {
-            if (mgActive) endMinigame();
-        }, MG_DURATION * 1000 + 50);
+        mgTimeoutId = setTimeout(() => { if (mgActive) endMinigame(); }, MG_DURATION * 1000 + 50);
     }
 
     function endMinigame() {
@@ -369,7 +302,6 @@
         if (mgTimeoutId) { clearTimeout(mgTimeoutId); mgTimeoutId = null; }
 
         const win = mgScore >= MG_GOAL;
-
         if (win) {
             state.coins += MG_REWARD;
             mgModalTitle.textContent = "Ты выиграл:";
@@ -383,10 +315,8 @@
             mgModalReward.classList.add("loss");
             mgModalSub.textContent = `Накликал ${mgScore} из ${MG_GOAL}`;
         }
-
         state.gamesPlayed = (state.gamesPlayed || 0) + 1;
         save();
-
         mgModalRepeat.disabled = state.stats.energy < MG_ENERGY_COST;
         mgModalEl.classList.remove("hidden");
     }
@@ -397,9 +327,7 @@
         mgScoreEl.textContent = mgScore;
         if (tg) tg.HapticFeedback?.impactOccurred("light");
     });
-
     mgModalBack.addEventListener("click", () => showGame());
-
     mgModalRepeat.addEventListener("click", () => {
         if (state.stats.energy < MG_ENERGY_COST) return;
         state.stats.energy = Math.max(0, state.stats.energy - MG_ENERGY_COST);
@@ -411,9 +339,14 @@
 
     let bbGrid = [];
     let bbShapes = [];
-    let bbSelected = null;
     let bbScore = 0;
     let bbActive = false;
+    let bbCellSize = 40;
+    let bbSelected = null;
+
+    // Drag state
+    let bbDrag = null;
+    let bbGhostEl = null;
 
     function bbNewShape() {
         const cells = BB_SHAPES[Math.floor(Math.random() * BB_SHAPES.length)];
@@ -427,6 +360,7 @@
         bbSelected = null;
         bbScore = 0;
         bbActive = true;
+        bbDrag = null;
     }
 
     function bbRender() {
@@ -436,11 +370,12 @@
             for (let x = 0; x < BB_SIZE; x++) {
                 const cell = document.createElement("div");
                 cell.className = "bb-cell";
+                cell.dataset.x = x;
+                cell.dataset.y = y;
                 if (bbGrid[y][x]) {
                     cell.classList.add("bb-cell--filled");
                     cell.style.background = bbGrid[y][x];
                 }
-                cell.addEventListener("click", () => bbPlace(x, y));
                 gridEl.appendChild(cell);
             }
         }
@@ -448,39 +383,40 @@
         const shapesEl = $("bbShapes");
         shapesEl.innerHTML = "";
         bbShapes.forEach((shape, i) => {
-            const shapeEl = document.createElement("div");
-            shapeEl.className = "bb-shape";
-            if (bbSelected === i) shapeEl.classList.add("bb-shape--selected");
-            if (!shape) shapeEl.classList.add("bb-shape--used");
+            const slot = document.createElement("div");
+            slot.className = "bb-shape";
 
-            if (shape) {
-                const maxX = Math.max(...shape.cells.map(c => c[0])) + 1;
-                const maxY = Math.max(...shape.cells.map(c => c[1])) + 1;
-                shapeEl.style.gridTemplateColumns = `repeat(${maxX}, 12px)`;
-                shapeEl.style.gridTemplateRows = `repeat(${maxY}, 12px)`;
-
-                const occupied = new Set(shape.cells.map(c => `${c[0]},${c[1]}`));
-                for (let y = 0; y < maxY; y++) {
-                    for (let x = 0; x < maxX; x++) {
-                        const mini = document.createElement("div");
-                        mini.className = "bb-mini";
-                        if (occupied.has(`${x},${y}`)) {
-                            mini.classList.add("bb-mini--filled");
-                            mini.style.background = shape.color;
-                        }
-                        shapeEl.appendChild(mini);
-                    }
-                }
+            if (!shape) {
+                slot.classList.add("bb-shape--used");
+                shapesEl.appendChild(slot);
+                return;
             }
 
-            shapeEl.addEventListener("click", (e) => {
-                e.stopPropagation();
-                if (!shape || !bbActive) return;
-                bbSelected = (bbSelected === i) ? null : i;
-                bbRender();
-            });
+            const maxX = Math.max(...shape.cells.map(c => c[0])) + 1;
+            const maxY = Math.max(...shape.cells.map(c => c[1])) + 1;
+            const occupied = new Set(shape.cells.map(c => `${c[0]},${c[1]}`));
 
-            shapesEl.appendChild(shapeEl);
+            const inner = document.createElement("div");
+            inner.className = "bb-shape__grid";
+            inner.style.gridTemplateColumns = `repeat(${maxX}, var(--bb-mini, 16px))`;
+            inner.style.gridTemplateRows = `repeat(${maxY}, var(--bb-mini, 16px))`;
+
+            for (let y = 0; y < maxY; y++) {
+                for (let x = 0; x < maxX; x++) {
+                    const mini = document.createElement("div");
+                    mini.className = "bb-mini";
+                    if (occupied.has(`${x},${y}`)) {
+                        mini.classList.add("bb-mini--filled");
+                        mini.style.background = shape.color;
+                    }
+                    inner.appendChild(mini);
+                }
+            }
+            slot.appendChild(inner);
+
+            slot.addEventListener("pointerdown", (e) => bbStartDrag(i, e));
+
+            shapesEl.appendChild(slot);
         });
 
         $("bbScore").textContent = bbScore;
@@ -496,10 +432,165 @@
         return true;
     }
 
-    function bbPlace(ox, oy) {
+    function bbGetCellFromPoint(clientX, clientY) {
+        const el = document.elementFromPoint(clientX, clientY);
+        if (!el || !el.classList.contains("bb-cell")) return null;
+        const x = parseInt(el.dataset.x, 10);
+        const y = parseInt(el.dataset.y, 10);
+        if (isNaN(x) || isNaN(y)) return null;
+        return { x, y, el };
+    }
+
+    function bbClearPreview() {
+        document.querySelectorAll(".bb-cell--preview-ok, .bb-cell--preview-bad")
+            .forEach(el => el.classList.remove("bb-cell--preview-ok", "bb-cell--preview-bad"));
+    }
+
+    function bbShowPreview(cells, ox, oy, valid, color) {
+        bbClearPreview();
+        for (const [dx, dy] of cells) {
+            const x = ox + dx, y = oy + dy;
+            if (x < 0 || y < 0 || x >= BB_SIZE || y >= BB_SIZE) continue;
+            const el = document.querySelector(`.bb-cell[data-x="${x}"][data-y="${y}"]`);
+            if (!el) continue;
+            el.classList.add(valid ? "bb-cell--preview-ok" : "bb-cell--preview-bad");
+            if (valid) el.style.background = color;
+        }
+    }
+
+    function bbStartDrag(shapeIndex, evt) {
         if (!bbActive) return;
-        if (bbSelected === null) return;
-        const shape = bbShapes[bbSelected];
+        const shape = bbShapes[shapeIndex];
+        if (!shape) return;
+
+        evt.preventDefault();
+
+        const slotEl = evt.currentTarget;
+        const slotRect = slotEl.getBoundingClientRect();
+
+        // Размер мини-клетки в слоте
+        const miniEl = slotEl.querySelector(".bb-mini--filled");
+        const miniSize = miniEl ? miniEl.getBoundingClientRect().width + 2 : 16;
+
+        // Размер клетки сетки
+        const gridCell = document.querySelector(".bb-cell");
+        const gridCellSize = gridCell ? gridCell.getBoundingClientRect().width + 3 : 40;
+
+        bbDrag = {
+            shapeIndex,
+            shape,
+            pointerId: evt.pointerId,
+            offsetX: 0,
+            offsetY: 0,
+            miniSize,
+            gridCellSize,
+            lastHoverCell: null,
+        };
+
+        // Создаём «призрак», который следует за пальцем
+        const ghost = document.createElement("div");
+        ghost.className = "bb-ghost";
+
+        const maxX = Math.max(...shape.cells.map(c => c[0])) + 1;
+        const maxY = Math.max(...shape.cells.map(c => c[1])) + 1;
+        const occupied = new Set(shape.cells.map(c => `${c[0]},${c[1]}`));
+
+        ghost.style.gridTemplateColumns = `repeat(${maxX}, ${miniSize}px)`;
+        ghost.style.gridTemplateRows = `repeat(${maxY}, ${miniSize}px)`;
+
+        for (let y = 0; y < maxY; y++) {
+            for (let x = 0; x < maxX; x++) {
+                const mini = document.createElement("div");
+                mini.className = "bb-mini";
+                if (occupied.has(`${x},${y}`)) {
+                    mini.classList.add("bb-mini--filled");
+                    mini.style.background = shape.color;
+                }
+                ghost.appendChild(mini);
+            }
+        }
+
+        document.body.appendChild(ghost);
+        bbGhostEl = ghost;
+
+        // Центр фигуры под пальцем
+        bbMoveGhost(evt.clientX, evt.clientY);
+
+        slotEl.setPointerCapture(evt.pointerId);
+        slotEl.addEventListener("pointermove", bbOnDragMove);
+        slotEl.addEventListener("pointerup", bbOnDragEnd);
+        slotEl.addEventListener("pointercancel", bbOnDragEnd);
+
+        slotEl.classList.add("bb-shape--dragging");
+        if (tg) tg.HapticFeedback?.impactOccurred("light");
+    }
+
+    function bbMoveGhost(clientX, clientY) {
+        if (!bbGhostEl) return;
+        const rect = bbGhostEl.getBoundingClientRect();
+        bbGhostEl.style.left = (clientX - rect.width / 2) + "px";
+        bbGhostEl.style.top = (clientY - rect.height - 20) + "px";
+    }
+
+    function bbOnDragMove(evt) {
+        if (!bbDrag) return;
+        bbMoveGhost(evt.clientX, evt.clientY);
+
+        // Определяем ячейку под фигурой (используем центр призрака)
+        const rect = bbGhostEl.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+
+        // Находим ячейку сетки, ближайшую к центру призрака
+        // Используем "хвост" (bottom-center) призрака
+        const tailX = rect.left + rect.width / 2;
+        const tailY = rect.bottom - 4;
+
+        const cell = bbGetCellFromPoint(tailX, tailY);
+        if (!cell) {
+            bbClearPreview();
+            bbDrag.lastHoverCell = null;
+            return;
+        }
+
+        // Смещение: где в фигуре "хвост" → предположим что это центр-низ фигуры
+        const maxX = Math.max(...bbDrag.shape.cells.map(c => c[0])) + 1;
+        const maxY = Math.max(...bbDrag.shape.cells.map(c => c[1])) + 1;
+        const anchorX = Math.floor(maxX / 2);
+        const anchorY = maxY - 1;
+
+        const ox = cell.x - anchorX;
+        const oy = cell.y - anchorY;
+
+        const valid = bbCanPlace(bbDrag.shape.cells, ox, oy);
+        bbShowPreview(bbDrag.shape.cells, ox, oy, valid, bbDrag.shape.color);
+
+        bbDrag.lastHoverCell = { ox, oy, valid };
+    }
+
+    function bbOnDragEnd(evt) {
+        if (!bbDrag) return;
+        const slotEl = evt.currentTarget;
+        slotEl.releasePointerCapture(evt.pointerId);
+        slotEl.removeEventListener("pointermove", bbOnDragMove);
+        slotEl.removeEventListener("pointerup", bbOnDragEnd);
+        slotEl.removeEventListener("pointercancel", bbOnDragEnd);
+        slotEl.classList.remove("bb-shape--dragging");
+
+        if (bbGhostEl) { bbGhostEl.remove(); bbGhostEl = null; }
+        bbClearPreview();
+
+        const hover = bbDrag.lastHoverCell;
+        const shapeIndex = bbDrag.shapeIndex;
+        bbDrag = null;
+
+        if (hover && hover.valid) {
+            bbPlaceShape(shapeIndex, hover.ox, hover.oy);
+        }
+    }
+
+    function bbPlaceShape(shapeIndex, ox, oy) {
+        const shape = bbShapes[shapeIndex];
         if (!shape) return;
         if (!bbCanPlace(shape.cells, ox, oy)) return;
 
@@ -507,8 +598,7 @@
             bbGrid[oy + dy][ox + dx] = shape.color;
         }
         bbScore += shape.cells.length;
-        bbShapes[bbSelected] = null;
-        bbSelected = null;
+        bbShapes[shapeIndex] = null;
 
         bbClearLines();
 
@@ -535,9 +625,7 @@
             for (let y = 0; y < BB_SIZE; y++) {
                 if (!bbGrid[y][x]) { full = false; break; }
             }
-            if (full) {
-                for (let y = 0; y < BB_SIZE; y++) toClear.add(`${x},${y}`);
-            }
+            if (full) for (let y = 0; y < BB_SIZE; y++) toClear.add(`${x},${y}`);
         }
 
         if (toClear.size === 0) return;
@@ -563,6 +651,8 @@
             bbGrid[y][x] = null;
         }
         bbScore += linesCleared * 50;
+
+        if (linesCleared > 0 && tg) tg.HapticFeedback?.notificationOccurred("success");
     }
 
     function bbAnyShapeFits() {
@@ -579,7 +669,6 @@
 
     function bbGameOver() {
         bbActive = false;
-
         let coins = 2;
         if (bbScore >= 300) coins = 20;
         else if (bbScore >= 150) coins = 10;
@@ -619,7 +708,6 @@
     });
 
     $("bbResultBack").addEventListener("click", () => showGame());
-
     $("bbResultRepeat").addEventListener("click", () => {
         if (state.stats.energy < BB_ENERGY_COST) {
             alert(`Нужно ${BB_ENERGY_COST} энергии.`);
@@ -658,10 +746,7 @@
 
     async function notifyServerSleep(durationMs) {
         const userId = tg?.initDataUnsafe?.user?.id;
-        if (!userId) {
-            console.warn("Нет user_id — бот не сможет прислать уведомление");
-            return;
-        }
+        if (!userId) return;
         try {
             await fetch("https://tamagotchi.layero.app/api/sleep/schedule", {
                 method: "POST",
@@ -673,7 +758,7 @@
                 }),
             });
         } catch (e) {
-            console.warn("Не удалось запланировать уведомление:", e);
+            console.warn("Sleep notify failed:", e);
         }
     }
 
