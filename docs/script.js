@@ -443,7 +443,13 @@
 
     function bbClearPreview() {
         document.querySelectorAll(".bb-cell--preview-ok, .bb-cell--preview-bad")
-            .forEach(el => el.classList.remove("bb-cell--preview-ok", "bb-cell--preview-bad"));
+            .forEach(el => {
+                el.classList.remove("bb-cell--preview-ok", "bb-cell--preview-bad");
+                // Возвращаем фон к состоянию сетки
+                const x = parseInt(el.dataset.x, 10);
+                const y = parseInt(el.dataset.y, 10);
+                el.style.background = bbGrid[y] && bbGrid[y][x] ? bbGrid[y][x] : "";
+            });
     }
 
     function bbShowPreview(cells, ox, oy, valid, color) {
@@ -466,28 +472,20 @@
         evt.preventDefault();
 
         const slotEl = evt.currentTarget;
-        const slotRect = slotEl.getBoundingClientRect();
 
         // Размер мини-клетки в слоте
         const miniEl = slotEl.querySelector(".bb-mini--filled");
         const miniSize = miniEl ? miniEl.getBoundingClientRect().width + 2 : 16;
 
-        // Размер клетки сетки
-        const gridCell = document.querySelector(".bb-cell");
-        const gridCellSize = gridCell ? gridCell.getBoundingClientRect().width + 3 : 40;
-
         bbDrag = {
             shapeIndex,
             shape,
             pointerId: evt.pointerId,
-            offsetX: 0,
-            offsetY: 0,
             miniSize,
-            gridCellSize,
             lastHoverCell: null,
         };
 
-        // Создаём «призрак», который следует за пальцем
+        // Создаём «призрак»
         const ghost = document.createElement("div");
         ghost.className = "bb-ghost";
 
@@ -512,14 +510,12 @@
 
         document.body.appendChild(ghost);
         bbGhostEl = ghost;
-
-        // Центр фигуры под пальцем
         bbMoveGhost(evt.clientX, evt.clientY);
 
-        slotEl.setPointerCapture(evt.pointerId);
-        slotEl.addEventListener("pointermove", bbOnDragMove);
-        slotEl.addEventListener("pointerup", bbOnDragEnd);
-        slotEl.addEventListener("pointercancel", bbOnDragEnd);
+        // Слушаем ВЕЗДЕ, не только на slot
+        document.addEventListener("pointermove", bbOnDragMove);
+        document.addEventListener("pointerup", bbOnDragEnd);
+        document.addEventListener("pointercancel", bbOnDragEnd);
 
         slotEl.classList.add("bb-shape--dragging");
         if (tg) tg.HapticFeedback?.impactOccurred("light");
@@ -527,36 +523,33 @@
 
     function bbMoveGhost(clientX, clientY) {
         if (!bbGhostEl) return;
+        // Смещаем ghost ВЫШЕ курсора, чтобы под курсором всегда была сетка,
+        // а не сам ghost. Это фиксит ПК-проблему с elementFromPoint.
         const rect = bbGhostEl.getBoundingClientRect();
         bbGhostEl.style.left = (clientX - rect.width / 2) + "px";
-        bbGhostEl.style.top = (clientY - rect.height - 20) + "px";
+        bbGhostEl.style.top = (clientY - rect.height - 30) + "px";
     }
 
     function bbOnDragMove(evt) {
-        if (!bbDrag) return;
+        if (!bbDrag || !bbGhostEl) return;
         bbMoveGhost(evt.clientX, evt.clientY);
 
-        // Определяем ячейку под фигурой (используем центр призрака)
-        const rect = bbGhostEl.getBoundingClientRect();
-        const centerX = rect.left + rect.width / 2;
-        const centerY = rect.top + rect.height / 2;
-
-        // Находим ячейку сетки, ближайшую к центру призрака
-        // Используем "хвост" (bottom-center) призрака
-        const tailX = rect.left + rect.width / 2;
-        const tailY = rect.bottom - 4;
-
-        const cell = bbGetCellFromPoint(tailX, tailY);
+        // Используем курсор (а не центр ghost) для определения ячейки
+        // Т.к. ghost смещён вверх, под курсором — чистая сетка
+        const cell = bbGetCellFromPoint(evt.clientX, evt.clientY);
         if (!cell) {
             bbClearPreview();
             bbDrag.lastHoverCell = null;
             return;
         }
 
-        // Смещение: где в фигуре "хвост" → предположим что это центр-низ фигуры
+        // "Хвост" ghost = где будет нижняя-центральная часть фигуры.
+        // Раз ghost выше курсора на ~30px, а anchor = bottom-center,
+        // то фигура встанет примерно там, где курсор.
+        // Считаем anchor по низу-центру фигуры.
         const maxX = Math.max(...bbDrag.shape.cells.map(c => c[0])) + 1;
         const maxY = Math.max(...bbDrag.shape.cells.map(c => c[1])) + 1;
-        const anchorX = Math.floor(maxX / 2);
+        const anchorX = Math.floor((maxX - 1) / 2);
         const anchorY = maxY - 1;
 
         const ox = cell.x - anchorX;
@@ -564,18 +557,18 @@
 
         const valid = bbCanPlace(bbDrag.shape.cells, ox, oy);
         bbShowPreview(bbDrag.shape.cells, ox, oy, valid, bbDrag.shape.color);
-
         bbDrag.lastHoverCell = { ox, oy, valid };
     }
 
     function bbOnDragEnd(evt) {
         if (!bbDrag) return;
-        const slotEl = evt.currentTarget;
-        slotEl.releasePointerCapture(evt.pointerId);
-        slotEl.removeEventListener("pointermove", bbOnDragMove);
-        slotEl.removeEventListener("pointerup", bbOnDragEnd);
-        slotEl.removeEventListener("pointercancel", bbOnDragEnd);
-        slotEl.classList.remove("bb-shape--dragging");
+
+        document.removeEventListener("pointermove", bbOnDragMove);
+        document.removeEventListener("pointerup", bbOnDragEnd);
+        document.removeEventListener("pointercancel", bbOnDragEnd);
+
+        document.querySelectorAll(".bb-shape--dragging")
+            .forEach(el => el.classList.remove("bb-shape--dragging"));
 
         if (bbGhostEl) { bbGhostEl.remove(); bbGhostEl = null; }
         bbClearPreview();
