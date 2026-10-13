@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Мой питомец</title>
-    <link rel="stylesheet" href="style.css?v=8">
-    <script src="telegram-web-app.js?v=8"></script>
+    <link rel="stylesheet" href="style.css?v=9">
+    <script src="telegram-web-app.js?v=9"></script>
 </head>
 <body>
 
@@ -55,7 +55,6 @@
             <img id="petSprite" class="pet__sprite" src="public/sprites/idle.png" alt="Питомец">
         </div>
 
-        <!-- Баннер сна (появляется, когда питомец спит) -->
         <div id="sleepBanner" class="sleep-banner hidden">
             <div class="sleep-banner__text">😴 Спит · <span id="sleepTimer">05:00</span></div>
         </div>
@@ -68,32 +67,43 @@
         </div>
     </div>
 
+    <!-- Экран-превью мини-игры -->
+    <div id="minigameIntro" class="screen onboarding hidden">
+        <div class="onboarding__content">
+            <div class="onboarding__emoji">🎮</div>
+            <h1 class="onboarding__title">Кликер</h1>
+            <p class="onboarding__text">Накликай <b>30 раз</b> за 10 секунд<br>и получи <b>+5 💰</b></p>
+
+            <div class="mg-intro-energy">
+                ⚡ Энергия: <b id="introEnergy">100</b>
+            </div>
+
+            <button id="introStart" class="onboarding__button">
+                Начать (−10 ⚡)
+            </button>
+            <button id="introCancel" class="onboarding__button onboarding__button--secondary">
+                Выйти
+            </button>
+        </div>
+    </div>
+
     <!-- Мини-игра -->
     <div id="minigame" class="screen minigame hidden">
         <header class="header">
             <div class="header__name">Кликер</div>
-            <div class="header__energy">⚡ <span id="mgEnergy">100</span></div>
+            <div class="header__energy">⏱ <span id="mgTimer">10</span> · ⚡ <span id="mgEnergy">100</span></div>
         </header>
-
-        <div class="mg-info">
-            Накликай <b>30 раз</b> за 10 секунд · вход: <b>−10 ⚡</b>
-        </div>
 
         <div class="mg-counter">
             <div class="mg-counter__num" id="mgScore">0</div>
-            <div class="mg-counter__label">кликов</div>
+            <div class="mg-counter__label">кликов · цель 30</div>
         </div>
 
         <button id="mgClickBtn" class="mg-click-btn">
             <span id="mgClickEmoji">🐣</span>
         </button>
 
-        <div class="actions">
-            <button class="action action--wide" id="mgCancel">← Назад</button>
-        </div>
-
-        <!-- Модалка результата -->
-        <div id="mgResult" class="mg-modal hidden">
+        <div class="mg-modal hidden" id="mgResult">
             <div class="mg-modal__content">
                 <h2 class="mg-modal__title" id="mgResultTitle">Ты выиграл:</h2>
                 <div class="mg-modal__reward" id="mgResultReward">+5 💰</div>
@@ -127,6 +137,6 @@
         </div>
     </div>
 
-    <script src="script.js?v=8"></script>
+    <script src="script.js?v=9"></script>
 </body>
 </html>

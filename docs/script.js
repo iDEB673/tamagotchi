@@ -5,7 +5,7 @@
         tg.expand();
     }
 
-    const STORAGE_KEY = "tamagotchi_demo_v3";
+    const STORAGE_KEY = "tamagotchi_demo_v4";
 
     const DECAY_PER_HOUR = {
         hunger: 5,
@@ -70,7 +70,6 @@
         }
     }
 
-    // Если сон уже прошёл, пока нас не было — применяем
     function checkSleepOnLoad() {
         if (!state.sleepUntil) return;
         const now = Date.now();
@@ -86,6 +85,7 @@
     const $ = (id) => document.getElementById(id);
     const onboardingEl = $("onboarding");
     const gameEl = $("game");
+    const introEl = $("minigameIntro");
     const minigameEl = $("minigame");
     const mgModalEl = $("mgResult");
     const sleepModalEl = $("sleepModal");
@@ -158,6 +158,7 @@
     function showOnboarding() {
         onboardingEl.classList.remove("hidden");
         gameEl.classList.add("hidden");
+        introEl.classList.add("hidden");
         minigameEl.classList.add("hidden");
         sleepModalEl.classList.add("hidden");
 
@@ -190,6 +191,7 @@
     function showGame() {
         onboardingEl.classList.add("hidden");
         gameEl.classList.remove("hidden");
+        introEl.classList.add("hidden");
         minigameEl.classList.add("hidden");
         sleepModalEl.classList.add("hidden");
         render();
@@ -220,7 +222,7 @@
         btn.addEventListener("click", () => {
             const action = btn.dataset.action;
             if (action === "play") {
-                tryStartMinigame();
+                openMinigameIntro();
             } else if (action === "sleep") {
                 openSleepModal();
             } else {
@@ -229,57 +231,39 @@
         });
     });
 
-    // ---------- Сон ----------
+    // ---------- Превью мини-игры ----------
 
-    function openSleepModal() {
+    function openMinigameIntro() {
         if (isSleeping()) return;
-        sleepModalEl.classList.remove("hidden");
+
+        const energyNow = Math.round(state.stats.energy);
+        $("introEnergy").textContent = energyNow;
+
+        const startBtn = $("introStart");
+        if (energyNow < MG_ENERGY_COST) {
+            startBtn.disabled = true;
+            startBtn.textContent = `Нужно ${MG_ENERGY_COST} ⚡`;
+        } else {
+            startBtn.disabled = false;
+            startBtn.textContent = `Начать (−${MG_ENERGY_COST} ⚡)`;
+        }
+
+        gameEl.classList.add("hidden");
+        minigameEl.classList.add("hidden");
+        mgModalEl.classList.add("hidden");
+        introEl.classList.remove("hidden");
     }
 
-    function startSleep(durationMs, gainRatio) {
-        state.sleepUntil = Date.now() + durationMs;
-        state.sleepGain = gainRatio;
+    $("introStart").addEventListener("click", () => {
+        if (state.stats.energy < MG_ENERGY_COST) return;
+        state.stats.energy = Math.max(0, state.stats.energy - MG_ENERGY_COST);
         save();
-        sleepModalEl.classList.add("hidden");
-        render();
-        startSleepTicker();
-    }
+        startMinigame();
+    });
 
-    let sleepTickerId = null;
-    function startSleepTicker() {
-        if (sleepTickerId) clearInterval(sleepTickerId);
-        sleepTickerId = setInterval(() => {
-            if (!isSleeping()) {
-                clearInterval(sleepTickerId);
-                sleepTickerId = null;
-                // Применяем награду сна
-                const gain = state.sleepGain || 0;
-                state.stats.energy = Math.max(0, Math.min(100, state.stats.energy + Math.round(gain * 100)));
-                state.sleepUntil = null;
-                state.sleepGain = 0;
-                save();
-                render();
-                if (tg) tg.HapticFeedback?.notificationOccurred("success");
-                alert("Питомец проснулся! Энергия восстановлена.");
-                return;
-            }
-            updateSleepTimer();
-        }, 500);
-        updateSleepTimer();
-    }
-
-    function updateSleepTimer() {
-        if (!state.sleepUntil) return;
-        const left = Math.max(0, state.sleepUntil - Date.now());
-        const totalSec = Math.ceil(left / 1000);
-        const m = Math.floor(totalSec / 60);
-        const s = totalSec % 60;
-        sleepTimerEl.textContent = `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-    }
-
-    $("sleepFast").addEventListener("click", () => startSleep(SLEEP_FAST_MS, SLEEP_FAST_GAIN));
-    $("sleepDeep").addEventListener("click", () => startSleep(SLEEP_DEEP_MS, SLEEP_DEEP_GAIN));
-    $("sleepCancel").addEventListener("click", () => sleepModalEl.classList.add("hidden"));
+    $("introCancel").addEventListener("click", () => {
+        showGame();
+    });
 
     // ---------- Мини-игра ----------
 
@@ -287,29 +271,21 @@
     let mgScore = 0;
     let mgActive = false;
     let mgTickerId = null;
+    let mgTimeoutId = null;
 
     const mgTimerEl = $("mgTimer");
     const mgEnergyEl = $("mgEnergy");
     const mgScoreEl = $("mgScore");
     const mgClickBtn = $("mgClickBtn");
-    const mgCancel = $("mgCancel");
     const mgModalTitle = $("mgResultTitle");
     const mgModalReward = $("mgResultReward");
     const mgModalSub = $("mgResultSub");
     const mgModalBack = $("mgResultBack");
     const mgModalRepeat = $("mgResultRepeat");
 
-    function tryStartMinigame() {
-        if (isSleeping()) return;
-        if (state.stats.energy < MG_ENERGY_COST) {
-            alert(`Нужно ${MG_ENERGY_COST} энергии. Пусть питомец поспит!`);
-            return;
-        }
-        startMinigame();
-    }
-
     function startMinigame() {
         gameEl.classList.add("hidden");
+        introEl.classList.add("hidden");
         mgModalEl.classList.add("hidden");
         minigameEl.classList.remove("hidden");
 
@@ -323,6 +299,7 @@
 
         if (mgTickerId) clearInterval(mgTickerId);
         mgTickerId = setInterval(() => {
+            if (!mgActive) return;
             const leftMs = mgEndAt - Date.now();
             if (leftMs <= 0) {
                 mgTimerEl.textContent = "0";
@@ -331,20 +308,21 @@
             }
             mgTimerEl.textContent = Math.ceil(leftMs / 1000);
         }, 100);
+
+        // Жёсткая гарантия окончания, даже если setInterval заморожен
+        if (mgTimeoutId) clearTimeout(mgTimeoutId);
+        mgTimeoutId = setTimeout(() => {
+            if (mgActive) endMinigame();
+        }, MG_DURATION * 1000 + 50);
     }
 
     function endMinigame() {
         if (!mgActive) return;
         mgActive = false;
-        if (mgTickerId) {
-            clearInterval(mgTickerId);
-            mgTickerId = null;
-        }
+        if (mgTickerId) { clearInterval(mgTickerId); mgTickerId = null; }
+        if (mgTimeoutId) { clearTimeout(mgTimeoutId); mgTimeoutId = null; }
 
         const win = mgScore >= MG_GOAL;
-
-        state.stats.energy = Math.max(0, state.stats.energy - MG_ENERGY_COST);
-        mgEnergyEl.textContent = Math.round(state.stats.energy);
 
         if (win) {
             state.coins += MG_REWARD;
@@ -374,18 +352,65 @@
         if (tg) tg.HapticFeedback?.impactOccurred("light");
     });
 
-    mgCancel.addEventListener("click", () => {
-        if (mgTickerId) clearInterval(mgTickerId);
-        mgActive = false;
-        showGame();
-    });
-
     mgModalBack.addEventListener("click", () => showGame());
 
     mgModalRepeat.addEventListener("click", () => {
         if (state.stats.energy < MG_ENERGY_COST) return;
+        state.stats.energy = Math.max(0, state.stats.energy - MG_ENERGY_COST);
+        save();
         startMinigame();
     });
+
+    // ---------- Сон ----------
+
+    function openSleepModal() {
+        if (isSleeping()) return;
+        sleepModalEl.classList.remove("hidden");
+    }
+
+    function startSleep(durationMs, gainRatio) {
+        state.sleepUntil = Date.now() + durationMs;
+        state.sleepGain = gainRatio;
+        save();
+        sleepModalEl.classList.add("hidden");
+        render();
+        startSleepTicker();
+    }
+
+    let sleepTickerId = null;
+    function startSleepTicker() {
+        if (sleepTickerId) clearInterval(sleepTickerId);
+        sleepTickerId = setInterval(() => {
+            if (!isSleeping()) {
+                clearInterval(sleepTickerId);
+                sleepTickerId = null;
+                const gain = state.sleepGain || 0;
+                state.stats.energy = Math.max(0, Math.min(100, state.stats.energy + Math.round(gain * 100)));
+                state.sleepUntil = null;
+                state.sleepGain = 0;
+                save();
+                render();
+                if (tg) tg.HapticFeedback?.notificationOccurred("success");
+                alert("Питомец проснулся! Энергия восстановлена.");
+                return;
+            }
+            updateSleepTimer();
+        }, 500);
+        updateSleepTimer();
+    }
+
+    function updateSleepTimer() {
+        if (!state.sleepUntil) return;
+        const left = Math.max(0, state.sleepUntil - Date.now());
+        const totalSec = Math.ceil(left / 1000);
+        const m = Math.floor(totalSec / 60);
+        const s = totalSec % 60;
+        sleepTimerEl.textContent = `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+    }
+
+    $("sleepFast").addEventListener("click", () => startSleep(SLEEP_FAST_MS, SLEEP_FAST_GAIN));
+    $("sleepDeep").addEventListener("click", () => startSleep(SLEEP_DEEP_MS, SLEEP_DEEP_GAIN));
+    $("sleepCancel").addEventListener("click", () => sleepModalEl.classList.add("hidden"));
 
     // ---------- Старт ----------
 

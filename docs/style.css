@@ -465,3 +465,26 @@ body {
     font-size: 13px;
     color: #666;
 }
+
+/* ---------- Экран-превью мини-игры ---------- */
+
+.mg-intro-energy {
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 16px;
+    color: var(--yellow);
+    font-size: 15px;
+}
+
+.onboarding__button--secondary {
+    background: transparent;
+    color: var(--text-muted);
+    border: 2px solid var(--bg-card);
+    margin-top: 8px;
+}
+
+.onboarding__button--secondary:hover {
+    background: var(--bg-card);
+    color: var(--text);
+}
