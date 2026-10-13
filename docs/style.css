@@ -318,3 +318,100 @@ body {
     font-size: 16px;
     max-width: 280px;
 }
+
+/* ---------- Модалка результата мини-игры ---------- */
+
+.mg-modal {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    z-index: 100;
+    animation: mgFadeIn 0.2s ease;
+}
+
+@keyframes mgFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.mg-modal__content {
+    background: #ffffff;
+    color: #111111;
+    border-radius: 20px;
+    padding: 28px 24px;
+    max-width: 320px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    animation: mgPopIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes mgPopIn {
+    from { transform: scale(0.85); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+.mg-modal__title {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: #111111;
+}
+
+.mg-modal__reward {
+    font-size: 32px;
+    font-weight: 800;
+    color: #4fc26a;
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+}
+
+.mg-modal__reward.loss {
+    color: #e05a5a;
+}
+
+.mg-modal__sub {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 24px;
+}
+
+.mg-modal__buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.mg-modal__btn {
+    padding: 12px;
+    border: none;
+    border-radius: 12px;
+    background: #f0f0f0;
+    color: #111;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.mg-modal__btn:hover {
+    background: #e0e0e0;
+}
+
+.mg-modal__btn--primary {
+    background: #5288c1;
+    color: #fff;
+}
+
+.mg-modal__btn--primary:hover {
+    background: #4a7ab0;
+}
+
+.mg-modal__btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}

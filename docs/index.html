@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Мой питомец</title>
-    <link rel="stylesheet" href="style.css?v=4">
-    <script src="telegram-web-app.js?v=4"></script>
+    <link rel="stylesheet" href="style.css?v=6">
+    <script src="telegram-web-app.js?v=6"></script>
 </head>
 <body>
 
@@ -82,18 +82,21 @@
         <div class="actions">
             <button class="action action--wide" id="mgCancel">← Назад</button>
         </div>
-    </div>
 
-    <!-- Результат мини-игры -->
-    <div id="mgResult" class="screen minigame hidden">
-        <div class="mg-result">
-            <div class="mg-result__emoji" id="mgResultEmoji">🎉</div>
-            <h2 class="mg-result__title" id="mgResultTitle">Победа!</h2>
-            <p class="mg-result__text" id="mgResultText">Ты накликал 35 раз. Награда: +5 монет</p>
-            <button id="mgResultOk" class="onboarding__button">Забрать</button>
+        <!-- Модалка результата -->
+        <div id="mgResult" class="mg-modal hidden">
+            <div class="mg-modal__content">
+                <h2 class="mg-modal__title" id="mgResultTitle">Ты выиграл:</h2>
+                <div class="mg-modal__reward" id="mgResultReward">+5 💰</div>
+                <p class="mg-modal__sub" id="mgResultSub">Накликал 40 раз</p>
+                <div class="mg-modal__buttons">
+                    <button id="mgResultBack" class="mg-modal__btn">Вернуться</button>
+                    <button id="mgResultRepeat" class="mg-modal__btn mg-modal__btn--primary">Повторить</button>
+                </div>
+            </div>
         </div>
     </div>
 
-    <script src="script.js?v=5"></script>
+    <script src="script.js?v=6"></script>
 </body>
 </html>

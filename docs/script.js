@@ -16,10 +16,15 @@
 
     const ACTIONS = {
         feed: { hunger: +25, happiness: +3, cleanliness: -5, cost: 1 },
-        play: { happiness: +20, energy: -10, hunger: -5, cost: 1 },
         sleep: { energy: +30, hunger: -5, cost: 0 },
         wash: { cleanliness: +30, happiness: +2, energy: -3, cost: 0 },
     };
+
+    const MG_DURATION = 10;
+    const MG_GOAL = 30;
+    const MG_REWARD = 5;
+    const MG_LOSS_PENALTY = 5;
+    const MG_ENERGY_COST = 10;
 
     const defaultState = () => ({
         petName: null,
@@ -63,7 +68,7 @@
     const onboardingEl = $("onboarding");
     const gameEl = $("game");
     const minigameEl = $("minigame");
-    const mgResultEl = $("mgResult");
+    const mgModalEl = $("mgResult");
     const nameInput = $("nameInput");
     const nameConfirm = $("nameConfirm");
     const petNameEl = $("petName");
@@ -100,7 +105,6 @@
         onboardingEl.classList.remove("hidden");
         gameEl.classList.add("hidden");
         minigameEl.classList.add("hidden");
-        mgResultEl.classList.add("hidden");
 
         nameConfirm.disabled = true;
         nameInput.addEventListener("input", () => {
@@ -132,7 +136,6 @@
         onboardingEl.classList.add("hidden");
         gameEl.classList.remove("hidden");
         minigameEl.classList.add("hidden");
-        mgResultEl.classList.add("hidden");
         render();
     }
 
@@ -159,33 +162,42 @@
         btn.addEventListener("click", () => {
             const action = btn.dataset.action;
             if (action === "play") {
-                startMinigame();
+                tryStartMinigame();
             } else {
                 applyAction(action);
             }
         });
     });
 
-    // ---------- Мини-игра: кликер ----------
-
-    const MG_DURATION = 10;
-    const MG_GOAL = 30;
-    const MG_REWARD = 5;
-    const MG_LOSS_PENALTY = 5;
+    // ---------- Мини-игра ----------
 
     let mgTimerId = null;
     let mgTimeLeft = 0;
     let mgScore = 0;
     let mgActive = false;
+    let mgLastWin = false;
 
     const mgTimerEl = $("mgTimer");
     const mgScoreEl = $("mgScore");
     const mgClickBtn = $("mgClickBtn");
     const mgCancel = $("mgCancel");
+    const mgModalTitle = $("mgResultTitle");
+    const mgModalReward = $("mgResultReward");
+    const mgModalSub = $("mgResultSub");
+    const mgModalBack = $("mgResultBack");
+    const mgModalRepeat = $("mgResultRepeat");
+
+    function tryStartMinigame() {
+        if (state.stats.energy < MG_ENERGY_COST) {
+            alert(`Нужно ${MG_ENERGY_COST} энергии. Пусть питомец поспит!`);
+            return;
+        }
+        startMinigame();
+    }
 
     function startMinigame() {
         gameEl.classList.add("hidden");
-        mgResultEl.classList.add("hidden");
+        mgModalEl.classList.add("hidden");
         minigameEl.classList.remove("hidden");
 
         mgScore = 0;
@@ -209,21 +221,34 @@
         mgTimerId = null;
 
         const win = mgScore >= MG_GOAL;
-        const reward = win ? MG_REWARD : 0;
-        state.coins += reward;
+        mgLastWin = win;
 
-        if (!win) {
+        state.stats.energy = Math.max(0, state.stats.energy - MG_ENERGY_COST);
+
+        if (win) {
+            state.coins += MG_REWARD;
+            mgModalTitle.textContent = "Ты выиграл:";
+            mgModalReward.textContent = `+${MG_REWARD} 💰`;
+            mgModalReward.classList.remove("loss");
+            mgModalSub.textContent = `Накликал ${mgScore} раз`;
+        } else {
             state.stats.happiness = Math.max(0, state.stats.happiness - MG_LOSS_PENALTY);
+            mgModalTitle.textContent = "Ты проиграл:";
+            mgModalReward.textContent = `−${MG_LOSS_PENALTY} 😢`;
+            mgModalReward.classList.add("loss");
+            mgModalSub.textContent = `Накликал ${mgScore} из ${MG_GOAL}`;
         }
 
         state.gamesPlayed = (state.gamesPlayed || 0) + 1;
         save();
 
-        $("mgResultEmoji").textContent = win ? "🎉" : "😔";
-        $("mgResultTitle").textContent = win ? "Победа!" : "Не вышло";
-        $("mgResultText").textContent = win
-            ? `Ты накликал ${mgScore} раз. Награда: +${reward} монет`
-            : `Ты накликал ${mgScore} из ${MG_GOAL}. Радость −${MG_LOSS_PENALTY}`;
+        if (state.stats.energy < MG_ENERGY_COST) {
+            mgModalRepeat.disabled = true;
+        } else {
+            mgModalRepeat.disabled = false;
+        }
+
+        mgModalEl.classList.remove("hidden");
     }
 
     mgClickBtn.addEventListener("click", () => {
@@ -239,8 +264,13 @@
         showGame();
     });
 
-    $("mgResultOk").addEventListener("click", () => {
+    mgModalBack.addEventListener("click", () => {
         showGame();
+    });
+
+    mgModalRepeat.addEventListener("click", () => {
+        if (state.stats.energy < MG_ENERGY_COST) return;
+        startMinigame();
     });
 
     // ---------- Старт ----------
