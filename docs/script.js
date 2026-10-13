@@ -39,7 +39,11 @@
     }
     function save() {
         state.lastUpdate = Date.now();
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        } catch (e) {
+            console.warn("localStorage недоступен:", e);
+        }
     }
 
     function applyDecay() {
@@ -97,20 +101,31 @@
         gameEl.classList.add("hidden");
         minigameEl.classList.add("hidden");
         mgResultEl.classList.add("hidden");
-        nameInput.focus();
+
         nameConfirm.disabled = true;
         nameInput.addEventListener("input", () => {
             nameConfirm.disabled = nameInput.value.trim().length === 0;
         });
+
         const confirm = () => {
-            const name = nameInput.value.trim();
-            if (!name) return;
-            state.petName = name;
-            save();
-            showGame();
+            try {
+                const name = nameInput.value.trim();
+                if (!name) return;
+                state.petName = name;
+                save();
+                showGame();
+            } catch (e) {
+                alert("Ошибка: " + e.message);
+            }
         };
-        nameConfirm.addEventListener("click", confirm);
-        nameInput.addEventListener("keydown", (e) => { if (e.key === "Enter") confirm(); });
+
+        nameConfirm.addEventListener("click", (e) => {
+            e.preventDefault();
+            confirm();
+        });
+        nameInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") { e.preventDefault(); confirm(); }
+        });
     }
 
     function showGame() {

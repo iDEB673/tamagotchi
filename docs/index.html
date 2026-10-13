@@ -3,26 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Мой питомец 3</title>
-    <link rel="stylesheet" href="style.css?v=3">
-    <script src="telegram-web-app.js?v=3"></script>
+    <title>Мой питомец</title>
+    <link rel="stylesheet" href="style.css?v=4">
+    <script src="telegram-web-app.js?v=4"></script>
 </head>
 <body>
 
-    <!-- Экран онбординга: юзер вводит имя -->
+    <!-- Онбординг -->
     <div id="onboarding" class="screen onboarding">
         <div class="onboarding__content">
             <div class="onboarding__emoji">🐣</div>
             <h1 class="onboarding__title">Новый питомец!</h1>
             <p class="onboarding__text">Придумай ему имя</p>
-            <input
-                id="nameInput"
-                class="onboarding__input"
-                type="text"
-                placeholder="Например, Момо"
-                maxlength="20"
-                autocomplete="off"
-            >
+            <input id="nameInput" class="onboarding__input" type="text"
+                   placeholder="Например, Момо" maxlength="20" autocomplete="off">
             <button id="nameConfirm" class="onboarding__button">Готово</button>
         </div>
     </div>
@@ -65,6 +59,41 @@
         </div>
     </div>
 
-    <script src="script.js?v=4"></script>
+    <!-- Мини-игра: кликер -->
+    <div id="minigame" class="screen minigame hidden">
+        <header class="header">
+            <div class="header__name">Кликер</div>
+            <div class="header__coins">⏱ <span id="mgTimer">10</span></div>
+        </header>
+
+        <div class="mg-info">
+            Накликай <b>30 раз</b> за 10 секунд
+        </div>
+
+        <div class="mg-counter">
+            <div class="mg-counter__num" id="mgScore">0</div>
+            <div class="mg-counter__label">кликов</div>
+        </div>
+
+        <button id="mgClickBtn" class="mg-click-btn">
+            <span id="mgClickEmoji">🐣</span>
+        </button>
+
+        <div class="actions">
+            <button class="action action--wide" id="mgCancel">← Назад</button>
+        </div>
+    </div>
+
+    <!-- Результат мини-игры -->
+    <div id="mgResult" class="screen minigame hidden">
+        <div class="mg-result">
+            <div class="mg-result__emoji" id="mgResultEmoji">🎉</div>
+            <h2 class="mg-result__title" id="mgResultTitle">Победа!</h2>
+            <p class="mg-result__text" id="mgResultText">Ты накликал 35 раз. Награда: +5 монет</p>
+            <button id="mgResultOk" class="onboarding__button">Забрать</button>
+        </div>
+    </div>
+
+    <script src="script.js?v=5"></script>
 </body>
 </html>
