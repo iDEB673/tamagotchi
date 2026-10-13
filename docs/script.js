@@ -108,6 +108,8 @@
     }
 
     const $ = (id) => document.getElementById(id);
+    window.addEventListener("pointercancel", bbCleanupGhosts);
+    window.addEventListener("blur", bbCleanupGhosts);
     const onboardingEl = $("onboarding");
     const gameEl = $("game");
     const chooserEl = $("gameChooser");
@@ -136,6 +138,7 @@
     };
 
     function hideAll() {
+        bbCleanupGhosts();
         [onboardingEl, gameEl, chooserEl, introEl, minigameEl, bbEl, sleepModalEl, mgModalEl, bbModalEl]
             .forEach(el => el && el.classList.add("hidden"));
     }
@@ -352,6 +355,14 @@
         const cells = BB_SHAPES[Math.floor(Math.random() * BB_SHAPES.length)];
         const color = BB_COLORS[Math.floor(Math.random() * BB_COLORS.length)];
         return { cells, color };
+    }
+
+        function bbCleanupGhosts() {
+        document.querySelectorAll(".bb-ghost").forEach(el => el.remove());
+        document.querySelectorAll(".bb-shape--dragging")
+            .forEach(el => el.classList.remove("bb-shape--dragging"));
+        bbGhostEl = null;
+        bbDrag = null;
     }
 
     function bbReset() {
@@ -679,6 +690,7 @@
     }
 
     function bbGameOver() {
+        bbCleanupGhosts();
         bbActive = false;
         let coins = 2;
         if (bbScore >= 300) coins = 20;
@@ -695,6 +707,7 @@
     }
 
     function startBlockBlast() {
+        bbCleanupGhosts();
         if (isSleeping()) return;
         if (state.stats.energy < BB_ENERGY_COST) {
             alert(`Нужно ${BB_ENERGY_COST} энергии. Пусть питомец поспит!`);
@@ -710,6 +723,7 @@
     }
 
     $("bbCancel").addEventListener("click", () => {
+        bbCleanupGhosts();
         if (bbActive) {
             bbActive = false;
             state.gamesPlayed = (state.gamesPlayed || 0) + 1;
