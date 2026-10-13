@@ -83,16 +83,34 @@
         cleanliness: $("bar-cleanliness"),
     };
 
+    const nums = {
+        hunger: $("num-hunger"),
+        happiness: $("num-happiness"),
+        energy: $("num-energy"),
+        cleanliness: $("num-cleanliness"),
+    };
+
     function render() {
         petNameEl.textContent = state.petName || "Питомец";
         coinsEl.textContent = state.coins;
+
         for (const key of Object.keys(bars)) {
-            const value = Math.max(0, Math.min(100, state.stats[key]));
+            const value = Math.max(0, Math.min(100, Math.round(state.stats[key])));
             bars[key].style.width = value + "%";
             bars[key].classList.remove("warn", "crit");
-            if (value <= 20) bars[key].classList.add("crit");
-            else if (value <= 50) bars[key].classList.add("warn");
+            if (nums[key]) {
+                nums[key].textContent = value;
+                nums[key].classList.remove("warn", "crit");
+            }
+            if (value <= 20) {
+                bars[key].classList.add("crit");
+                if (nums[key]) nums[key].classList.add("crit");
+            } else if (value <= 50) {
+                bars[key].classList.add("warn");
+                if (nums[key]) nums[key].classList.add("warn");
+            }
         }
+
         let sprite = "idle";
         if (state.stats.hunger <= 30) sprite = "hungry";
         else if (state.stats.cleanliness <= 30) sprite = "dirty";
@@ -178,6 +196,7 @@
     let mgLastWin = false;
 
     const mgTimerEl = $("mgTimer");
+    const mgEnergyEl = $("mgEnergy");
     const mgScoreEl = $("mgScore");
     const mgClickBtn = $("mgClickBtn");
     const mgCancel = $("mgCancel");
@@ -206,6 +225,7 @@
 
         mgScoreEl.textContent = "0";
         mgTimerEl.textContent = MG_DURATION;
+        mgEnergyEl.textContent = Math.round(state.stats.energy);
 
         mgTimerId = setInterval(() => {
             mgTimeLeft -= 1;
@@ -223,7 +243,8 @@
         const win = mgScore >= MG_GOAL;
         mgLastWin = win;
 
-        state.stats.energy = Math.max(0, state.stats.energy - MG_ENERGY_COST);
+                state.stats.energy = Math.max(0, state.stats.energy - MG_ENERGY_COST);
+        mgEnergyEl.textContent = Math.round(state.stats.energy);
 
         if (win) {
             state.coins += MG_REWARD;

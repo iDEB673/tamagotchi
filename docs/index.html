@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Мой питомец</title>
-    <link rel="stylesheet" href="style.css?v=6">
-    <script src="telegram-web-app.js?v=6"></script>
+    <link rel="stylesheet" href="style.css?v=7">
+    <script src="telegram-web-app.js?v=7"></script>
 </head>
 <body>
 
@@ -32,18 +32,22 @@
             <div class="stat">
                 <div class="stat__icon">🍖</div>
                 <div class="stat__bar"><div class="stat__fill" id="bar-hunger"></div></div>
+                <div class="stat__num" id="num-hunger">100</div>
             </div>
             <div class="stat">
                 <div class="stat__icon">😊</div>
                 <div class="stat__bar"><div class="stat__fill" id="bar-happiness"></div></div>
+                <div class="stat__num" id="num-happiness">100</div>
             </div>
             <div class="stat">
                 <div class="stat__icon">⚡</div>
                 <div class="stat__bar"><div class="stat__fill" id="bar-energy"></div></div>
+                <div class="stat__num" id="num-energy">100</div>
             </div>
             <div class="stat">
                 <div class="stat__icon">🧼</div>
                 <div class="stat__bar"><div class="stat__fill" id="bar-cleanliness"></div></div>
+                <div class="stat__num" id="num-cleanliness">100</div>
             </div>
         </div>
 
@@ -59,15 +63,15 @@
         </div>
     </div>
 
-    <!-- Мини-игра: кликер -->
+    <!-- Мини-игра -->
     <div id="minigame" class="screen minigame hidden">
         <header class="header">
             <div class="header__name">Кликер</div>
-            <div class="header__coins">⏱ <span id="mgTimer">10</span></div>
+            <div class="header__energy">⚡ <span id="mgEnergy">100</span></div>
         </header>
 
         <div class="mg-info">
-            Накликай <b>30 раз</b> за 10 секунд
+            Накликай <b>30 раз</b> за 10 секунд · вход: <b>−10 ⚡</b>
         </div>
 
         <div class="mg-counter">
@@ -97,6 +101,6 @@
         </div>
     </div>
 
-    <script src="script.js?v=6"></script>
+    <script src="script.js?v=7"></script>
 </body>
 </html>
