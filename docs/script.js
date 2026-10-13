@@ -30,12 +30,34 @@
     const SLEEP_FAST_GAIN = 0.5;
     const SLEEP_DEEP_GAIN = 1.0;
 
-        // Статы, которые тратятся во сне (за минуту сна)
     const SLEEP_DECAY_PER_MIN = {
         hunger: 2.0,
         happiness: 1.5,
         cleanliness: 1.5,
     };
+
+    const BB_SIZE = 8;
+    const BB_ENERGY_COST = 15;
+
+    const BB_SHAPES = [
+        [[0,0]],
+        [[0,0],[1,0]],
+        [[0,0],[0,1]],
+        [[0,0],[1,0],[2,0]],
+        [[0,0],[0,1],[0,2]],
+        [[0,0],[1,0],[2,0],[3,0]],
+        [[0,0],[0,1],[0,2],[0,3]],
+        [[0,0],[1,0],[0,1],[1,1]],
+        [[0,0],[1,0],[0,1]],
+        [[0,0],[1,0],[1,1]],
+        [[0,0],[0,1],[1,1]],
+        [[1,0],[0,1],[1,1]],
+    ];
+
+    const BB_COLORS = [
+        "#ff6b6b", "#feca57", "#48dbfb", "#1dd1a1",
+        "#a29bfe", "#fd79a8", "#54a0ff", "#26de81",
+    ];
 
     const defaultState = () => ({
         petName: null,
@@ -45,6 +67,7 @@
         gamesPlayed: 0,
         sleepUntil: null,
         sleepGain: 0,
+        sleepStartedAt: null,
     });
 
     let state = load() || defaultState();
@@ -55,6 +78,7 @@
             return raw ? JSON.parse(raw) : null;
         } catch { return null; }
     }
+
     function save() {
         state.lastUpdate = Date.now();
         try {
@@ -77,19 +101,6 @@
         }
     }
 
-    function checkSleepOnLoad() {
-        if (!state.sleepUntil) return;
-        const now = Date.now();
-        if (now >= state.sleepUntil) {
-            const gain = state.sleepGain || 0;
-            state.stats.energy = Math.max(0, Math.min(100, state.stats.energy + Math.round(gain * 100)));
-            applySleepDecay();
-            state.sleepUntil = null;
-            state.sleepGain = 0;
-            save();
-        }
-    }
-
     function applySleepDecay() {
         if (!state.sleepStartedAt) return 0;
         const elapsedMin = (Date.now() - state.sleepStartedAt) / 60000;
@@ -103,6 +114,19 @@
         }
         state.sleepStartedAt = null;
         return elapsedMin;
+    }
+
+    function checkSleepOnLoad() {
+        if (!state.sleepUntil) return;
+        const now = Date.now();
+        if (now >= state.sleepUntil) {
+            const gain = state.sleepGain || 0;
+            state.stats.energy = Math.max(0, Math.min(100, state.stats.energy + Math.round(gain * 100)));
+            applySleepDecay();
+            state.sleepUntil = null;
+            state.sleepGain = 0;
+            save();
+        }
     }
 
     const $ = (id) => document.getElementById(id);
@@ -136,6 +160,18 @@
         energy: $("num-energy"),
         cleanliness: $("num-cleanliness"),
     };
+
+    function hideAll() {
+        onboardingEl.classList.add("hidden");
+        gameEl.classList.add("hidden");
+        chooserEl.classList.add("hidden");
+        introEl.classList.add("hidden");
+        minigameEl.classList.add("hidden");
+        bbEl.classList.add("hidden");
+        sleepModalEl.classList.add("hidden");
+        mgModalEl.classList.add("hidden");
+        bbModalEl.classList.add("hidden");
+    }
 
     function isSleeping() {
         return state.sleepUntil && Date.now() < state.sleepUntil;
@@ -182,14 +218,8 @@
     }
 
     function showOnboarding() {
+        hideAll();
         onboardingEl.classList.remove("hidden");
-        gameEl.classList.add("hidden");
-        introEl.classList.add("hidden");
-        chooserEl.classList.add("hidden");
-        bbEl.classList.add("hidden");
-        bbModalEl.classList.add("hidden");
-        minigameEl.classList.add("hidden");
-        sleepModalEl.classList.add("hidden");
 
         nameConfirm.disabled = true;
         nameInput.addEventListener("input", () => {
@@ -197,15 +227,11 @@
         });
 
         const confirm = () => {
-            try {
-                const name = nameInput.value.trim();
-                if (!name) return;
-                state.petName = name;
-                save();
-                showGame();
-            } catch (e) {
-                alert("Ошибка: " + e.message);
-            }
+            const name = nameInput.value.trim();
+            if (!name) return;
+            state.petName = name;
+            save();
+            showGame();
         };
 
         nameConfirm.addEventListener("click", (e) => {
@@ -218,21 +244,20 @@
     }
 
     function showGame() {
-        onboardingEl.classList.add("hidden");
+        hideAll();
         gameEl.classList.remove("hidden");
-        introEl.classList.add("hidden");
-        chooserEl.classList.add("hidden");
-        bbEl.classList.add("hidden");
-        bbModalEl.classList.add("hidden");
-        minigameEl.classList.add("hidden");
-        sleepModalEl.classList.add("hidden");
         render();
+    }
+
+    function openGameChooser() {
+        if (isSleeping()) return;
+        hideAll();
+        chooserEl.classList.remove("hidden");
     }
 
     function applyAction(name) {
         const action = ACTIONS[name];
         if (!action) return;
-
         if (isSleeping()) return;
 
         if (action.cost > 0 && state.coins < action.cost) {
@@ -253,28 +278,13 @@
     actionButtons.forEach((btn) => {
         btn.addEventListener("click", () => {
             const action = btn.dataset.action;
-            if (action === "play") {
-                openGameChooser();
-            } else if (action === "sleep") {
-                openSleepModal();
-            } else {
-                applyAction(action);
-            }
+            if (action === "play") openGameChooser();
+            else if (action === "sleep") openSleepModal();
+            else applyAction(action);
         });
     });
 
-    // ---------- Превью мини-игры ----------
-    function openGameChooser() {
-        if (isSleeping()) return;
-        gameEl.classList.add("hidden");
-        introEl.classList.add("hidden");
-        minigameEl.classList.add("hidden");
-        bbEl.classList.add("hidden");
-        sleepModalEl.classList.add("hidden");
-        mgModalEl.classList.add("hidden");
-        bbModalEl.classList.add("hidden");
-        chooserEl.classList.remove("hidden");
-    }
+    // ---------- Кликер: превью ----------
 
     function openMinigameIntro() {
         if (isSleeping()) return;
@@ -291,11 +301,7 @@
             startBtn.textContent = `Начать (−${MG_ENERGY_COST} ⚡)`;
         }
 
-        gameEl.classList.add("hidden");
-        chooserEl.classList.add("hidden");
-        minigameEl.classList.add("hidden");
-        bbEl.classList.add("hidden");
-        mgModalEl.classList.add("hidden");
+        hideAll();
         introEl.classList.remove("hidden");
     }
 
@@ -306,11 +312,9 @@
         startMinigame();
     });
 
-    $("introCancel").addEventListener("click", () => {
-        showGame();
-    });
+    $("introCancel").addEventListener("click", () => showGame());
 
-    // ---------- Мини-игра ----------
+    // ---------- Кликер ----------
 
     let mgEndAt = 0;
     let mgScore = 0;
@@ -329,9 +333,7 @@
     const mgModalRepeat = $("mgResultRepeat");
 
     function startMinigame() {
-        gameEl.classList.add("hidden");
-        introEl.classList.add("hidden");
-        mgModalEl.classList.add("hidden");
+        hideAll();
         minigameEl.classList.remove("hidden");
 
         mgScore = 0;
@@ -354,7 +356,6 @@
             mgTimerEl.textContent = Math.ceil(leftMs / 1000);
         }, 100);
 
-        // Жёсткая гарантия окончания, даже если setInterval заморожен
         if (mgTimeoutId) clearTimeout(mgTimeoutId);
         mgTimeoutId = setTimeout(() => {
             if (mgActive) endMinigame();
@@ -406,6 +407,237 @@
         startMinigame();
     });
 
+    // ---------- Block Blast ----------
+
+    let bbGrid = [];
+    let bbShapes = [];
+    let bbSelected = null;
+    let bbScore = 0;
+    let bbActive = false;
+
+    function bbNewShape() {
+        const cells = BB_SHAPES[Math.floor(Math.random() * BB_SHAPES.length)];
+        const color = BB_COLORS[Math.floor(Math.random() * BB_COLORS.length)];
+        return { cells, color };
+    }
+
+    function bbReset() {
+        bbGrid = Array.from({ length: BB_SIZE }, () => Array(BB_SIZE).fill(null));
+        bbShapes = [bbNewShape(), bbNewShape(), bbNewShape()];
+        bbSelected = null;
+        bbScore = 0;
+        bbActive = true;
+    }
+
+    function bbRender() {
+        const gridEl = $("bbGrid");
+        gridEl.innerHTML = "";
+        for (let y = 0; y < BB_SIZE; y++) {
+            for (let x = 0; x < BB_SIZE; x++) {
+                const cell = document.createElement("div");
+                cell.className = "bb-cell";
+                if (bbGrid[y][x]) {
+                    cell.classList.add("bb-cell--filled");
+                    cell.style.background = bbGrid[y][x];
+                }
+                cell.addEventListener("click", () => bbPlace(x, y));
+                gridEl.appendChild(cell);
+            }
+        }
+
+        const shapesEl = $("bbShapes");
+        shapesEl.innerHTML = "";
+        bbShapes.forEach((shape, i) => {
+            const shapeEl = document.createElement("div");
+            shapeEl.className = "bb-shape";
+            if (bbSelected === i) shapeEl.classList.add("bb-shape--selected");
+            if (!shape) shapeEl.classList.add("bb-shape--used");
+
+            if (shape) {
+                const maxX = Math.max(...shape.cells.map(c => c[0])) + 1;
+                const maxY = Math.max(...shape.cells.map(c => c[1])) + 1;
+                shapeEl.style.gridTemplateColumns = `repeat(${maxX}, 12px)`;
+                shapeEl.style.gridTemplateRows = `repeat(${maxY}, 12px)`;
+
+                const occupied = new Set(shape.cells.map(c => `${c[0]},${c[1]}`));
+                for (let y = 0; y < maxY; y++) {
+                    for (let x = 0; x < maxX; x++) {
+                        const mini = document.createElement("div");
+                        mini.className = "bb-mini";
+                        if (occupied.has(`${x},${y}`)) {
+                            mini.classList.add("bb-mini--filled");
+                            mini.style.background = shape.color;
+                        }
+                        shapeEl.appendChild(mini);
+                    }
+                }
+            }
+
+            shapeEl.addEventListener("click", (e) => {
+                e.stopPropagation();
+                if (!shape || !bbActive) return;
+                bbSelected = (bbSelected === i) ? null : i;
+                bbRender();
+            });
+
+            shapesEl.appendChild(shapeEl);
+        });
+
+        $("bbScore").textContent = bbScore;
+        $("bbEnergy").textContent = Math.round(state.stats.energy);
+    }
+
+    function bbCanPlace(cells, ox, oy) {
+        for (const [dx, dy] of cells) {
+            const x = ox + dx, y = oy + dy;
+            if (x < 0 || y < 0 || x >= BB_SIZE || y >= BB_SIZE) return false;
+            if (bbGrid[y][x]) return false;
+        }
+        return true;
+    }
+
+    function bbPlace(ox, oy) {
+        if (!bbActive) return;
+        if (bbSelected === null) return;
+        const shape = bbShapes[bbSelected];
+        if (!shape) return;
+        if (!bbCanPlace(shape.cells, ox, oy)) return;
+
+        for (const [dx, dy] of shape.cells) {
+            bbGrid[oy + dy][ox + dx] = shape.color;
+        }
+        bbScore += shape.cells.length;
+        bbShapes[bbSelected] = null;
+        bbSelected = null;
+
+        bbClearLines();
+
+        if (bbShapes.every(s => s === null)) {
+            bbShapes = [bbNewShape(), bbNewShape(), bbNewShape()];
+        }
+
+        bbRender();
+        if (tg) tg.HapticFeedback?.impactOccurred("light");
+
+        if (!bbAnyShapeFits()) bbGameOver();
+    }
+
+    function bbClearLines() {
+        const toClear = new Set();
+
+        for (let y = 0; y < BB_SIZE; y++) {
+            if (bbGrid[y].every(c => c)) {
+                for (let x = 0; x < BB_SIZE; x++) toClear.add(`${x},${y}`);
+            }
+        }
+        for (let x = 0; x < BB_SIZE; x++) {
+            let full = true;
+            for (let y = 0; y < BB_SIZE; y++) {
+                if (!bbGrid[y][x]) { full = false; break; }
+            }
+            if (full) {
+                for (let y = 0; y < BB_SIZE; y++) toClear.add(`${x},${y}`);
+            }
+        }
+
+        if (toClear.size === 0) return;
+
+        let linesCleared = 0;
+        for (let y = 0; y < BB_SIZE; y++) {
+            let full = true;
+            for (let x = 0; x < BB_SIZE; x++) {
+                if (!toClear.has(`${x},${y}`)) { full = false; break; }
+            }
+            if (full) linesCleared++;
+        }
+        for (let x = 0; x < BB_SIZE; x++) {
+            let full = true;
+            for (let y = 0; y < BB_SIZE; y++) {
+                if (!toClear.has(`${x},${y}`)) { full = false; break; }
+            }
+            if (full) linesCleared++;
+        }
+
+        for (const key of toClear) {
+            const [x, y] = key.split(",").map(Number);
+            bbGrid[y][x] = null;
+        }
+        bbScore += linesCleared * 50;
+    }
+
+    function bbAnyShapeFits() {
+        for (const shape of bbShapes) {
+            if (!shape) continue;
+            for (let y = 0; y < BB_SIZE; y++) {
+                for (let x = 0; x < BB_SIZE; x++) {
+                    if (bbCanPlace(shape.cells, x, y)) return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    function bbGameOver() {
+        bbActive = false;
+
+        let coins = 2;
+        if (bbScore >= 300) coins = 20;
+        else if (bbScore >= 150) coins = 10;
+        else if (bbScore >= 50) coins = 5;
+
+        state.coins += coins;
+        state.gamesPlayed = (state.gamesPlayed || 0) + 1;
+        save();
+
+        $("bbResultReward").textContent = `+${coins} 💰`;
+        $("bbResultSub").textContent = `Счёт: ${bbScore}`;
+        bbModalEl.classList.remove("hidden");
+    }
+
+    function startBlockBlast() {
+        if (isSleeping()) return;
+        if (state.stats.energy < BB_ENERGY_COST) {
+            alert(`Нужно ${BB_ENERGY_COST} энергии. Пусть питомец поспит!`);
+            return;
+        }
+        state.stats.energy = Math.max(0, state.stats.energy - BB_ENERGY_COST);
+        save();
+
+        hideAll();
+        bbEl.classList.remove("hidden");
+        bbReset();
+        bbRender();
+    }
+
+    $("bbCancel").addEventListener("click", () => {
+        if (bbActive) {
+            bbActive = false;
+            state.gamesPlayed = (state.gamesPlayed || 0) + 1;
+            save();
+        }
+        showGame();
+    });
+
+    $("bbResultBack").addEventListener("click", () => showGame());
+
+    $("bbResultRepeat").addEventListener("click", () => {
+        if (state.stats.energy < BB_ENERGY_COST) {
+            alert(`Нужно ${BB_ENERGY_COST} энергии.`);
+            return;
+        }
+        state.stats.energy = Math.max(0, state.stats.energy - BB_ENERGY_COST);
+        save();
+        bbModalEl.classList.add("hidden");
+        bbReset();
+        bbRender();
+    });
+
+    // ---------- Обработчики выбора игры ----------
+
+    $("chooseClicker").addEventListener("click", () => openMinigameIntro());
+    $("chooseBlock").addEventListener("click", () => startBlockBlast());
+    $("chooseCancel").addEventListener("click", () => showGame());
+
     // ---------- Сон ----------
 
     function openSleepModal() {
@@ -453,14 +685,14 @@
                 clearInterval(sleepTickerId);
                 sleepTickerId = null;
                 const gain = state.sleepGain || 0;
-                const sleptMin = applySleepDecay();
+                applySleepDecay();
                 state.stats.energy = Math.max(0, Math.min(100, state.stats.energy + Math.round(gain * 100)));
                 state.sleepUntil = null;
                 state.sleepGain = 0;
                 save();
                 render();
                 if (tg) tg.HapticFeedback?.notificationOccurred("success");
-                alert(`Питомец проснулся! Энергия восстановлена.\nСпал ${Math.round(sleptMin)} мин · потрачено: 🍖 −${Math.round(sleptMin * SLEEP_DECAY_PER_MIN.hunger)}, 😊 −${Math.round(sleptMin * SLEEP_DECAY_PER_MIN.happiness)}, 🧼 −${Math.round(sleptMin * SLEEP_DECAY_PER_MIN.cleanliness)}`);
+                alert("Питомец проснулся! Энергия восстановлена.");
                 return;
             }
             updateSleepTimer();
