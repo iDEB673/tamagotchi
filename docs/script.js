@@ -472,27 +472,53 @@
         evt.preventDefault();
 
         const slotEl = evt.currentTarget;
-
-        // Размер мини-клетки в слоте
         const miniEl = slotEl.querySelector(".bb-mini--filled");
         const miniSize = miniEl ? miniEl.getBoundingClientRect().width + 2 : 16;
+
+        // Определяем, какую ИМЕННО клетку фигуры схватил палец
+        // Находим все mini-ячейки с data-shape-x/y
+        const maxX = Math.max(...shape.cells.map(c => c[0])) + 1;
+        const maxY = Math.max(...shape.cells.map(c => c[1])) + 1;
+
+        // Элементы mini (в grid-е)
+        const mins = slotEl.querySelectorAll(".bb-shape__grid .bb-mini");
+        let grabCellX = Math.floor((maxX - 1) / 2);
+        let grabCellY = maxY - 1;
+
+        // Пробуем найти mini под пальцем
+        // Формат хранения — тот же порядок, что и в bbRender
+        const cellArr = [];
+        for (let y = 0; y < maxY; y++) {
+            for (let x = 0; x < maxX; x++) {
+                cellArr.push({ x, y });
+            }
+        }
+        for (let i = 0; i < mins.length; i++) {
+            const m = mins[i];
+            const r = m.getBoundingClientRect();
+            if (evt.clientX >= r.left && evt.clientX <= r.right &&
+                evt.clientY >= r.top && evt.clientY <= r.bottom) {
+                grabCellX = cellArr[i].x;
+                grabCellY = cellArr[i].y;
+                break;
+            }
+        }
 
         bbDrag = {
             shapeIndex,
             shape,
             pointerId: evt.pointerId,
             miniSize,
+            grabCellX,
+            grabCellY,
             lastHoverCell: null,
         };
 
-        // Создаём «призрак»
+        // Создаём ghost фигуры
         const ghost = document.createElement("div");
         ghost.className = "bb-ghost";
 
-        const maxX = Math.max(...shape.cells.map(c => c[0])) + 1;
-        const maxY = Math.max(...shape.cells.map(c => c[1])) + 1;
         const occupied = new Set(shape.cells.map(c => `${c[0]},${c[1]}`));
-
         ghost.style.gridTemplateColumns = `repeat(${maxX}, ${miniSize}px)`;
         ghost.style.gridTemplateRows = `repeat(${maxY}, ${miniSize}px)`;
 
@@ -512,7 +538,6 @@
         bbGhostEl = ghost;
         bbMoveGhost(evt.clientX, evt.clientY);
 
-        // Слушаем ВЕЗДЕ, не только на slot
         document.addEventListener("pointermove", bbOnDragMove);
         document.addEventListener("pointerup", bbOnDragEnd);
         document.addEventListener("pointercancel", bbOnDragEnd);
@@ -522,20 +547,22 @@
     }
 
     function bbMoveGhost(clientX, clientY) {
-        if (!bbGhostEl) return;
-        // Смещаем ghost ВЫШЕ курсора, чтобы под курсором всегда была сетка,
-        // а не сам ghost. Это фиксит ПК-проблему с elementFromPoint.
-        const rect = bbGhostEl.getBoundingClientRect();
-        bbGhostEl.style.left = (clientX - rect.width / 2) + "px";
-        bbGhostEl.style.top = (clientY - rect.height - 30) + "px";
+        if (!bbGhostEl || !bbDrag) return;
+        const { miniSize, grabCellX, grabCellY } = bbDrag;
+
+        // Левый-верхний угол ghost так, чтобы точка (grabCellX, grabCellY) была под пальцем
+        const left = clientX - grabCellX * miniSize - miniSize / 2;
+        const top = clientY - grabCellY * miniSize - miniSize / 2;
+
+        bbGhostEl.style.left = left + "px";
+        bbGhostEl.style.top = top + "px";
     }
 
     function bbOnDragMove(evt) {
         if (!bbDrag || !bbGhostEl) return;
         bbMoveGhost(evt.clientX, evt.clientY);
 
-        // Используем курсор (а не центр ghost) для определения ячейки
-        // Т.к. ghost смещён вверх, под курсором — чистая сетка
+        // Ячейка под пальцем — туда встанет "grab"-клетка фигуры
         const cell = bbGetCellFromPoint(evt.clientX, evt.clientY);
         if (!cell) {
             bbClearPreview();
@@ -543,17 +570,8 @@
             return;
         }
 
-        // "Хвост" ghost = где будет нижняя-центральная часть фигуры.
-        // Раз ghost выше курсора на ~30px, а anchor = bottom-center,
-        // то фигура встанет примерно там, где курсор.
-        // Считаем anchor по низу-центру фигуры.
-        const maxX = Math.max(...bbDrag.shape.cells.map(c => c[0])) + 1;
-        const maxY = Math.max(...bbDrag.shape.cells.map(c => c[1])) + 1;
-        const anchorX = Math.floor((maxX - 1) / 2);
-        const anchorY = maxY - 1;
-
-        const ox = cell.x - anchorX;
-        const oy = cell.y - anchorY;
+        const ox = cell.x - bbDrag.grabCellX;
+        const oy = cell.y - bbDrag.grabCellY;
 
         const valid = bbCanPlace(bbDrag.shape.cells, ox, oy);
         bbShowPreview(bbDrag.shape.cells, ox, oy, valid, bbDrag.shape.color);
