@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Мой питомец</title>
-    <link rel="stylesheet" href="style.css?v=9">
-    <script src="telegram-web-app.js?v=9"></script>
+    <link rel="stylesheet" href="style.css?v=10">
+    <script src="telegram-web-app.js?v=10"></script>
 </head>
 <body>
 
@@ -67,42 +67,58 @@
         </div>
     </div>
 
-    <!-- Экран-превью мини-игры -->
-    <div id="minigameIntro" class="screen onboarding hidden">
+    <!-- Выбор игры -->
+    <div id="gameChooser" class="screen onboarding hidden">
         <div class="onboarding__content">
             <div class="onboarding__emoji">🎮</div>
-            <h1 class="onboarding__title">Кликер</h1>
-            <p class="onboarding__text">Накликай <b>30 раз</b> за 10 секунд<br>и получи <b>+5 💰</b></p>
+            <h1 class="onboarding__title">Выбери игру</h1>
+            <p class="onboarding__text">Заработай монеты для питомца</p>
 
-            <div class="mg-intro-energy">
-                ⚡ Энергия: <b id="introEnergy">100</b>
-            </div>
-
-            <button id="introStart" class="onboarding__button">
-                Начать (−10 ⚡)
+            <button id="chooseClicker" class="game-choice">
+                <div class="game-choice__emoji">⚡</div>
+                <div class="game-choice__text">
+                    <div class="game-choice__title">Кликер</div>
+                    <div class="game-choice__sub">10 сек · −10 ⚡ · до +5 💰</div>
+                </div>
             </button>
-            <button id="introCancel" class="onboarding__button onboarding__button--secondary">
+
+            <button id="chooseBlock" class="game-choice">
+                <div class="game-choice__emoji">🧩</div>
+                <div class="game-choice__text">
+                    <div class="game-choice__title">Block Blast</div>
+                    <div class="game-choice__sub">собирай линии · −15 ⚡ · до +20 💰</div>
+                </div>
+            </button>
+
+            <button id="chooseCancel" class="onboarding__button onboarding__button--secondary">
                 Выйти
             </button>
         </div>
     </div>
 
-    <!-- Мини-игра -->
+    <!-- Кликер - превью -->
+    <div id="minigameIntro" class="screen onboarding hidden">
+        <div class="onboarding__content">
+            <div class="onboarding__emoji">🎮</div>
+            <h1 class="onboarding__title">Кликер</h1>
+            <p class="onboarding__text">Накликай <b>30 раз</b> за 10 секунд<br>и получи <b>+5 💰</b></p>
+            <div class="mg-intro-energy">⚡ Энергия: <b id="introEnergy">100</b></div>
+            <button id="introStart" class="onboarding__button">Начать (−10 ⚡)</button>
+            <button id="introCancel" class="onboarding__button onboarding__button--secondary">Выйти</button>
+        </div>
+    </div>
+
+    <!-- Кликер -->
     <div id="minigame" class="screen minigame hidden">
         <header class="header">
             <div class="header__name">Кликер</div>
             <div class="header__energy">⏱ <span id="mgTimer">10</span> · ⚡ <span id="mgEnergy">100</span></div>
         </header>
-
         <div class="mg-counter">
             <div class="mg-counter__num" id="mgScore">0</div>
             <div class="mg-counter__label">кликов · цель 30</div>
         </div>
-
-        <button id="mgClickBtn" class="mg-click-btn">
-            <span id="mgClickEmoji">🐣</span>
-        </button>
-
+        <button id="mgClickBtn" class="mg-click-btn"><span>🐣</span></button>
         <div class="mg-modal hidden" id="mgResult">
             <div class="mg-modal__content">
                 <h2 class="mg-modal__title" id="mgResultTitle">Ты выиграл:</h2>
@@ -116,27 +132,52 @@
         </div>
     </div>
 
-    <!-- Модалка выбора сна -->
+    <!-- Block Blast -->
+    <div id="blockblast" class="screen blockblast hidden">
+        <header class="header">
+            <div class="header__name">Block Blast</div>
+            <div class="header__energy">🎯 <span id="bbScore">0</span> · ⚡ <span id="bbEnergy">100</span></div>
+        </header>
+
+        <div class="bb-grid" id="bbGrid"></div>
+
+        <div class="bb-shapes" id="bbShapes"></div>
+
+        <div class="actions">
+            <button class="action action--wide" id="bbCancel">← Назад</button>
+        </div>
+
+        <div id="bbResult" class="mg-modal hidden">
+            <div class="mg-modal__content">
+                <h2 class="mg-modal__title">Игра окончена</h2>
+                <div class="mg-modal__reward" id="bbResultReward">+10 💰</div>
+                <p class="mg-modal__sub" id="bbResultSub">Счёт: 250</p>
+                <div class="mg-modal__buttons">
+                    <button id="bbResultBack" class="mg-modal__btn">Вернуться</button>
+                    <button id="bbResultRepeat" class="mg-modal__btn mg-modal__btn--primary">Повторить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модалка сна -->
     <div id="sleepModal" class="mg-modal hidden">
         <div class="mg-modal__content">
             <h2 class="mg-modal__title">Как спать будем?</h2>
-
             <button id="sleepFast" class="sleep-option">
                 <div class="sleep-option__title">💤 Быстрый сон</div>
                 <div class="sleep-option__sub">5 минут · +50% энергии</div>
             </button>
-
             <button id="sleepDeep" class="sleep-option">
                 <div class="sleep-option__title">😴 Глубокий сон</div>
                 <div class="sleep-option__sub">10 минут · 100% энергии</div>
             </button>
-
             <div class="mg-modal__buttons">
                 <button id="sleepCancel" class="mg-modal__btn mg-modal__btn--wide">Отмена</button>
             </div>
         </div>
     </div>
 
-    <script src="script.js?v=9"></script>
+    <script src="script.js?v=10"></script>
 </body>
 </html>

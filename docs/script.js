@@ -108,9 +108,12 @@
     const $ = (id) => document.getElementById(id);
     const onboardingEl = $("onboarding");
     const gameEl = $("game");
+    const chooserEl = $("gameChooser");
     const introEl = $("minigameIntro");
     const minigameEl = $("minigame");
+    const bbEl = $("blockblast");
     const mgModalEl = $("mgResult");
+    const bbModalEl = $("bbResult");
     const sleepModalEl = $("sleepModal");
     const sleepBannerEl = $("sleepBanner");
     const sleepTimerEl = $("sleepTimer");
@@ -182,6 +185,9 @@
         onboardingEl.classList.remove("hidden");
         gameEl.classList.add("hidden");
         introEl.classList.add("hidden");
+        chooserEl.classList.add("hidden");
+        bbEl.classList.add("hidden");
+        bbModalEl.classList.add("hidden");
         minigameEl.classList.add("hidden");
         sleepModalEl.classList.add("hidden");
 
@@ -215,6 +221,9 @@
         onboardingEl.classList.add("hidden");
         gameEl.classList.remove("hidden");
         introEl.classList.add("hidden");
+        chooserEl.classList.add("hidden");
+        bbEl.classList.add("hidden");
+        bbModalEl.classList.add("hidden");
         minigameEl.classList.add("hidden");
         sleepModalEl.classList.add("hidden");
         render();
@@ -245,7 +254,7 @@
         btn.addEventListener("click", () => {
             const action = btn.dataset.action;
             if (action === "play") {
-                openMinigameIntro();
+                openGameChooser();
             } else if (action === "sleep") {
                 openSleepModal();
             } else {
@@ -255,6 +264,17 @@
     });
 
     // ---------- Превью мини-игры ----------
+    function openGameChooser() {
+        if (isSleeping()) return;
+        gameEl.classList.add("hidden");
+        introEl.classList.add("hidden");
+        minigameEl.classList.add("hidden");
+        bbEl.classList.add("hidden");
+        sleepModalEl.classList.add("hidden");
+        mgModalEl.classList.add("hidden");
+        bbModalEl.classList.add("hidden");
+        chooserEl.classList.remove("hidden");
+    }
 
     function openMinigameIntro() {
         if (isSleeping()) return;
@@ -272,7 +292,9 @@
         }
 
         gameEl.classList.add("hidden");
+        chooserEl.classList.add("hidden");
         minigameEl.classList.add("hidden");
+        bbEl.classList.add("hidden");
         mgModalEl.classList.add("hidden");
         introEl.classList.remove("hidden");
     }
