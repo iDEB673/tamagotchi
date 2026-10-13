@@ -5,7 +5,7 @@
         tg.expand();
     }
 
-    const STORAGE_KEY = "tamagotchi_demo_v2";
+    const STORAGE_KEY = "tamagotchi_demo_v3";
 
     const DECAY_PER_HOUR = {
         hunger: 5,
@@ -16,7 +16,6 @@
 
     const ACTIONS = {
         feed: { hunger: +25, happiness: +3, cleanliness: -5, cost: 1 },
-        sleep: { energy: +30, hunger: -5, cost: 0 },
         wash: { cleanliness: +30, happiness: +2, energy: -3, cost: 0 },
     };
 
@@ -26,12 +25,19 @@
     const MG_LOSS_PENALTY = 5;
     const MG_ENERGY_COST = 10;
 
+    const SLEEP_FAST_MS = 5 * 60 * 1000;
+    const SLEEP_DEEP_MS = 10 * 60 * 1000;
+    const SLEEP_FAST_GAIN = 0.5;
+    const SLEEP_DEEP_GAIN = 1.0;
+
     const defaultState = () => ({
         petName: null,
         coins: 100,
         stats: { hunger: 100, happiness: 100, energy: 100, cleanliness: 100 },
         lastUpdate: Date.now(),
         gamesPlayed: 0,
+        sleepUntil: null,
+        sleepGain: 0,
     });
 
     let state = load() || defaultState();
@@ -64,11 +70,27 @@
         }
     }
 
+    // Если сон уже прошёл, пока нас не было — применяем
+    function checkSleepOnLoad() {
+        if (!state.sleepUntil) return;
+        const now = Date.now();
+        if (now >= state.sleepUntil) {
+            const gain = state.sleepGain || 0;
+            state.stats.energy = Math.max(0, Math.min(100, state.stats.energy + Math.round(gain * 100)));
+            state.sleepUntil = null;
+            state.sleepGain = 0;
+            save();
+        }
+    }
+
     const $ = (id) => document.getElementById(id);
     const onboardingEl = $("onboarding");
     const gameEl = $("game");
     const minigameEl = $("minigame");
     const mgModalEl = $("mgResult");
+    const sleepModalEl = $("sleepModal");
+    const sleepBannerEl = $("sleepBanner");
+    const sleepTimerEl = $("sleepTimer");
     const nameInput = $("nameInput");
     const nameConfirm = $("nameConfirm");
     const petNameEl = $("petName");
@@ -82,13 +104,16 @@
         energy: $("bar-energy"),
         cleanliness: $("bar-cleanliness"),
     };
-
     const nums = {
         hunger: $("num-hunger"),
         happiness: $("num-happiness"),
         energy: $("num-energy"),
         cleanliness: $("num-cleanliness"),
     };
+
+    function isSleeping() {
+        return state.sleepUntil && Date.now() < state.sleepUntil;
+    }
 
     function render() {
         petNameEl.textContent = state.petName || "Питомец";
@@ -111,18 +136,30 @@
             }
         }
 
-        let sprite = "idle";
-        if (state.stats.hunger <= 30) sprite = "hungry";
-        else if (state.stats.cleanliness <= 30) sprite = "dirty";
-        else if (state.stats.energy <= 30) sprite = "sleeping";
-        else if (state.stats.happiness >= 80) sprite = "happy";
-        petSpriteEl.src = `public/sprites/${sprite}.png`;
+        const sleeping = isSleeping();
+        if (sleeping) {
+            sleepBannerEl.classList.remove("hidden");
+            petSpriteEl.src = `public/sprites/sleeping.png`;
+        } else {
+            sleepBannerEl.classList.add("hidden");
+            let sprite = "idle";
+            if (state.stats.hunger <= 30) sprite = "hungry";
+            else if (state.stats.cleanliness <= 30) sprite = "dirty";
+            else if (state.stats.energy <= 30) sprite = "sleeping";
+            else if (state.stats.happiness >= 80) sprite = "happy";
+            petSpriteEl.src = `public/sprites/${sprite}.png`;
+        }
+
+        actionButtons.forEach((btn) => {
+            btn.disabled = sleeping;
+        });
     }
 
     function showOnboarding() {
         onboardingEl.classList.remove("hidden");
         gameEl.classList.add("hidden");
         minigameEl.classList.add("hidden");
+        sleepModalEl.classList.add("hidden");
 
         nameConfirm.disabled = true;
         nameInput.addEventListener("input", () => {
@@ -154,12 +191,15 @@
         onboardingEl.classList.add("hidden");
         gameEl.classList.remove("hidden");
         minigameEl.classList.add("hidden");
+        sleepModalEl.classList.add("hidden");
         render();
     }
 
     function applyAction(name) {
         const action = ACTIONS[name];
         if (!action) return;
+
+        if (isSleeping()) return;
 
         if (action.cost > 0 && state.coins < action.cost) {
             alert(`Нужно ${action.cost} монет. Заработай в мини-игре!`);
@@ -181,19 +221,72 @@
             const action = btn.dataset.action;
             if (action === "play") {
                 tryStartMinigame();
+            } else if (action === "sleep") {
+                openSleepModal();
             } else {
                 applyAction(action);
             }
         });
     });
 
+    // ---------- Сон ----------
+
+    function openSleepModal() {
+        if (isSleeping()) return;
+        sleepModalEl.classList.remove("hidden");
+    }
+
+    function startSleep(durationMs, gainRatio) {
+        state.sleepUntil = Date.now() + durationMs;
+        state.sleepGain = gainRatio;
+        save();
+        sleepModalEl.classList.add("hidden");
+        render();
+        startSleepTicker();
+    }
+
+    let sleepTickerId = null;
+    function startSleepTicker() {
+        if (sleepTickerId) clearInterval(sleepTickerId);
+        sleepTickerId = setInterval(() => {
+            if (!isSleeping()) {
+                clearInterval(sleepTickerId);
+                sleepTickerId = null;
+                // Применяем награду сна
+                const gain = state.sleepGain || 0;
+                state.stats.energy = Math.max(0, Math.min(100, state.stats.energy + Math.round(gain * 100)));
+                state.sleepUntil = null;
+                state.sleepGain = 0;
+                save();
+                render();
+                if (tg) tg.HapticFeedback?.notificationOccurred("success");
+                alert("Питомец проснулся! Энергия восстановлена.");
+                return;
+            }
+            updateSleepTimer();
+        }, 500);
+        updateSleepTimer();
+    }
+
+    function updateSleepTimer() {
+        if (!state.sleepUntil) return;
+        const left = Math.max(0, state.sleepUntil - Date.now());
+        const totalSec = Math.ceil(left / 1000);
+        const m = Math.floor(totalSec / 60);
+        const s = totalSec % 60;
+        sleepTimerEl.textContent = `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+    }
+
+    $("sleepFast").addEventListener("click", () => startSleep(SLEEP_FAST_MS, SLEEP_FAST_GAIN));
+    $("sleepDeep").addEventListener("click", () => startSleep(SLEEP_DEEP_MS, SLEEP_DEEP_GAIN));
+    $("sleepCancel").addEventListener("click", () => sleepModalEl.classList.add("hidden"));
+
     // ---------- Мини-игра ----------
 
-    let mgTimerId = null;
-    let mgTimeLeft = 0;
+    let mgEndAt = 0;
     let mgScore = 0;
     let mgActive = false;
-    let mgLastWin = false;
+    let mgTickerId = null;
 
     const mgTimerEl = $("mgTimer");
     const mgEnergyEl = $("mgEnergy");
@@ -207,6 +300,7 @@
     const mgModalRepeat = $("mgResultRepeat");
 
     function tryStartMinigame() {
+        if (isSleeping()) return;
         if (state.stats.energy < MG_ENERGY_COST) {
             alert(`Нужно ${MG_ENERGY_COST} энергии. Пусть питомец поспит!`);
             return;
@@ -220,30 +314,36 @@
         minigameEl.classList.remove("hidden");
 
         mgScore = 0;
-        mgTimeLeft = MG_DURATION;
         mgActive = true;
+        mgEndAt = Date.now() + MG_DURATION * 1000;
 
         mgScoreEl.textContent = "0";
         mgTimerEl.textContent = MG_DURATION;
         mgEnergyEl.textContent = Math.round(state.stats.energy);
 
-        mgTimerId = setInterval(() => {
-            mgTimeLeft -= 1;
-            mgTimerEl.textContent = mgTimeLeft;
-            if (mgTimeLeft <= 0) endMinigame();
-        }, 1000);
+        if (mgTickerId) clearInterval(mgTickerId);
+        mgTickerId = setInterval(() => {
+            const leftMs = mgEndAt - Date.now();
+            if (leftMs <= 0) {
+                mgTimerEl.textContent = "0";
+                endMinigame();
+                return;
+            }
+            mgTimerEl.textContent = Math.ceil(leftMs / 1000);
+        }, 100);
     }
 
     function endMinigame() {
         if (!mgActive) return;
         mgActive = false;
-        clearInterval(mgTimerId);
-        mgTimerId = null;
+        if (mgTickerId) {
+            clearInterval(mgTickerId);
+            mgTickerId = null;
+        }
 
         const win = mgScore >= MG_GOAL;
-        mgLastWin = win;
 
-                state.stats.energy = Math.max(0, state.stats.energy - MG_ENERGY_COST);
+        state.stats.energy = Math.max(0, state.stats.energy - MG_ENERGY_COST);
         mgEnergyEl.textContent = Math.round(state.stats.energy);
 
         if (win) {
@@ -263,12 +363,7 @@
         state.gamesPlayed = (state.gamesPlayed || 0) + 1;
         save();
 
-        if (state.stats.energy < MG_ENERGY_COST) {
-            mgModalRepeat.disabled = true;
-        } else {
-            mgModalRepeat.disabled = false;
-        }
-
+        mgModalRepeat.disabled = state.stats.energy < MG_ENERGY_COST;
         mgModalEl.classList.remove("hidden");
     }
 
@@ -280,14 +375,12 @@
     });
 
     mgCancel.addEventListener("click", () => {
-        if (mgTimerId) clearInterval(mgTimerId);
+        if (mgTickerId) clearInterval(mgTickerId);
         mgActive = false;
         showGame();
     });
 
-    mgModalBack.addEventListener("click", () => {
-        showGame();
-    });
+    mgModalBack.addEventListener("click", () => showGame());
 
     mgModalRepeat.addEventListener("click", () => {
         if (state.stats.energy < MG_ENERGY_COST) return;
@@ -297,7 +390,9 @@
     // ---------- Старт ----------
 
     applyDecay();
+    checkSleepOnLoad();
     if (!state.petName) showOnboarding();
     else showGame();
+    if (isSleeping()) startSleepTicker();
     save();
 })();

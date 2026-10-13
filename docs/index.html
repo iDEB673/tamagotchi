@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Мой питомец</title>
-    <link rel="stylesheet" href="style.css?v=7">
-    <script src="telegram-web-app.js?v=7"></script>
+    <link rel="stylesheet" href="style.css?v=8">
+    <script src="telegram-web-app.js?v=8"></script>
 </head>
 <body>
 
@@ -55,6 +55,11 @@
             <img id="petSprite" class="pet__sprite" src="public/sprites/idle.png" alt="Питомец">
         </div>
 
+        <!-- Баннер сна (появляется, когда питомец спит) -->
+        <div id="sleepBanner" class="sleep-banner hidden">
+            <div class="sleep-banner__text">😴 Спит · <span id="sleepTimer">05:00</span></div>
+        </div>
+
         <div class="actions">
             <button class="action" data-action="feed">🍖<span>Покормить</span></button>
             <button class="action" data-action="play">🎮<span>Играть</span></button>
@@ -101,6 +106,27 @@
         </div>
     </div>
 
-    <script src="script.js?v=7"></script>
+    <!-- Модалка выбора сна -->
+    <div id="sleepModal" class="mg-modal hidden">
+        <div class="mg-modal__content">
+            <h2 class="mg-modal__title">Как спать будем?</h2>
+
+            <button id="sleepFast" class="sleep-option">
+                <div class="sleep-option__title">💤 Быстрый сон</div>
+                <div class="sleep-option__sub">5 минут · +50% энергии</div>
+            </button>
+
+            <button id="sleepDeep" class="sleep-option">
+                <div class="sleep-option__title">😴 Глубокий сон</div>
+                <div class="sleep-option__sub">10 минут · 100% энергии</div>
+            </button>
+
+            <div class="mg-modal__buttons">
+                <button id="sleepCancel" class="mg-modal__btn mg-modal__btn--wide">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js?v=8"></script>
 </body>
 </html>
