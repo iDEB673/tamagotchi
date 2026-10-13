@@ -5,12 +5,28 @@
         tg.expand();
     }
 
-    const STORAGE_KEY = "tamagotchi_demo_v1";
+    const STORAGE_KEY = "tamagotchi_demo_v2";
+
+    const DECAY_PER_HOUR = {
+        hunger: 5,
+        happiness: 4,
+        energy: 3,
+        cleanliness: 3,
+    };
+
+    const ACTIONS = {
+        feed: { hunger: +25, happiness: +3, cleanliness: -5, cost: 1 },
+        play: { happiness: +20, energy: -10, hunger: -5, cost: 1 },
+        sleep: { energy: +30, hunger: -5, cost: 0 },
+        wash: { cleanliness: +30, happiness: +2, energy: -3, cost: 0 },
+    };
 
     const defaultState = () => ({
         petName: null,
         coins: 100,
         stats: { hunger: 100, happiness: 100, energy: 100, cleanliness: 100 },
+        lastUpdate: Date.now(),
+        gamesPlayed: 0,
     });
 
     let state = load() || defaultState();
@@ -22,23 +38,40 @@
         } catch { return null; }
     }
     function save() {
+        state.lastUpdate = Date.now();
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     }
 
-    const onboardingEl = document.getElementById("onboarding");
-    const gameEl = document.getElementById("game");
-    const nameInput = document.getElementById("nameInput");
-    const nameConfirm = document.getElementById("nameConfirm");
-    const petNameEl = document.getElementById("petName");
-    const coinsEl = document.getElementById("coins");
-    const petSpriteEl = document.getElementById("petSprite");
-    const actionButtons = document.querySelectorAll(".action");
+    function applyDecay() {
+        const now = Date.now();
+        const elapsedMs = now - (state.lastUpdate || now);
+        const hours = elapsedMs / (1000 * 60 * 60);
+        if (hours <= 0) return;
+        for (const [key, rate] of Object.entries(DECAY_PER_HOUR)) {
+            const delta = Math.floor(rate * hours);
+            if (delta > 0) {
+                state.stats[key] = Math.max(0, state.stats[key] - delta);
+            }
+        }
+    }
+
+    const $ = (id) => document.getElementById(id);
+    const onboardingEl = $("onboarding");
+    const gameEl = $("game");
+    const minigameEl = $("minigame");
+    const mgResultEl = $("mgResult");
+    const nameInput = $("nameInput");
+    const nameConfirm = $("nameConfirm");
+    const petNameEl = $("petName");
+    const coinsEl = $("coins");
+    const petSpriteEl = $("petSprite");
+    const actionButtons = document.querySelectorAll(".action[data-action]");
 
     const bars = {
-        hunger: document.getElementById("bar-hunger"),
-        happiness: document.getElementById("bar-happiness"),
-        energy: document.getElementById("bar-energy"),
-        cleanliness: document.getElementById("bar-cleanliness"),
+        hunger: $("bar-hunger"),
+        happiness: $("bar-happiness"),
+        energy: $("bar-energy"),
+        cleanliness: $("bar-cleanliness"),
     };
 
     function render() {
@@ -62,6 +95,8 @@
     function showOnboarding() {
         onboardingEl.classList.remove("hidden");
         gameEl.classList.add("hidden");
+        minigameEl.classList.add("hidden");
+        mgResultEl.classList.add("hidden");
         nameInput.focus();
         nameConfirm.disabled = true;
         nameInput.addEventListener("input", () => {
@@ -81,32 +116,122 @@
     function showGame() {
         onboardingEl.classList.add("hidden");
         gameEl.classList.remove("hidden");
+        minigameEl.classList.add("hidden");
+        mgResultEl.classList.add("hidden");
         render();
     }
 
-    const ACTIONS = {
-        feed: { hunger: +25, happiness: +3, cleanliness: -5 },
-        play: { happiness: +20, energy: -10, hunger: -5 },
-        sleep: { energy: +30, hunger: -5 },
-        wash: { cleanliness: +30, happiness: +2, energy: -3 },
-    };
-
     function applyAction(name) {
-        const deltas = ACTIONS[name];
-        if (!deltas) return;
-        for (const [key, delta] of Object.entries(deltas)) {
+        const action = ACTIONS[name];
+        if (!action) return;
+
+        if (action.cost > 0 && state.coins < action.cost) {
+            alert(`Нужно ${action.cost} монет. Заработай в мини-игре!`);
+            return;
+        }
+
+        for (const [key, delta] of Object.entries(action)) {
+            if (key === "cost") continue;
             state.stats[key] = Math.max(0, Math.min(100, state.stats[key] + delta));
         }
-        state.coins = Math.max(0, state.coins - 1);
+        state.coins = Math.max(0, state.coins - action.cost);
         save();
         render();
         if (tg) tg.HapticFeedback?.impactOccurred("light");
     }
 
     actionButtons.forEach((btn) => {
-        btn.addEventListener("click", () => applyAction(btn.dataset.action));
+        btn.addEventListener("click", () => {
+            const action = btn.dataset.action;
+            if (action === "play") {
+                startMinigame();
+            } else {
+                applyAction(action);
+            }
+        });
     });
 
+    // ---------- Мини-игра: кликер ----------
+
+    const MG_DURATION = 10;
+    const MG_GOAL = 30;
+    const MG_REWARD = 5;
+    const MG_LOSS_PENALTY = 5;
+
+    let mgTimerId = null;
+    let mgTimeLeft = 0;
+    let mgScore = 0;
+    let mgActive = false;
+
+    const mgTimerEl = $("mgTimer");
+    const mgScoreEl = $("mgScore");
+    const mgClickBtn = $("mgClickBtn");
+    const mgCancel = $("mgCancel");
+
+    function startMinigame() {
+        gameEl.classList.add("hidden");
+        mgResultEl.classList.add("hidden");
+        minigameEl.classList.remove("hidden");
+
+        mgScore = 0;
+        mgTimeLeft = MG_DURATION;
+        mgActive = true;
+
+        mgScoreEl.textContent = "0";
+        mgTimerEl.textContent = MG_DURATION;
+
+        mgTimerId = setInterval(() => {
+            mgTimeLeft -= 1;
+            mgTimerEl.textContent = mgTimeLeft;
+            if (mgTimeLeft <= 0) endMinigame();
+        }, 1000);
+    }
+
+    function endMinigame() {
+        if (!mgActive) return;
+        mgActive = false;
+        clearInterval(mgTimerId);
+        mgTimerId = null;
+
+        const win = mgScore >= MG_GOAL;
+        const reward = win ? MG_REWARD : 0;
+        state.coins += reward;
+
+        if (!win) {
+            state.stats.happiness = Math.max(0, state.stats.happiness - MG_LOSS_PENALTY);
+        }
+
+        state.gamesPlayed = (state.gamesPlayed || 0) + 1;
+        save();
+
+        $("mgResultEmoji").textContent = win ? "🎉" : "😔";
+        $("mgResultTitle").textContent = win ? "Победа!" : "Не вышло";
+        $("mgResultText").textContent = win
+            ? `Ты накликал ${mgScore} раз. Награда: +${reward} монет`
+            : `Ты накликал ${mgScore} из ${MG_GOAL}. Радость −${MG_LOSS_PENALTY}`;
+    }
+
+    mgClickBtn.addEventListener("click", () => {
+        if (!mgActive) return;
+        mgScore += 1;
+        mgScoreEl.textContent = mgScore;
+        if (tg) tg.HapticFeedback?.impactOccurred("light");
+    });
+
+    mgCancel.addEventListener("click", () => {
+        if (mgTimerId) clearInterval(mgTimerId);
+        mgActive = false;
+        showGame();
+    });
+
+    $("mgResultOk").addEventListener("click", () => {
+        showGame();
+    });
+
+    // ---------- Старт ----------
+
+    applyDecay();
     if (!state.petName) showOnboarding();
     else showGame();
+    save();
 })();
