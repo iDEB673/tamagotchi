@@ -375,6 +375,28 @@
         sleepModalEl.classList.add("hidden");
         render();
         startSleepTicker();
+        notifyServerSleep(durationMs);
+    }
+
+    async function notifyServerSleep(durationMs) {
+        const userId = tg?.initDataUnsafe?.user?.id;
+        if (!userId) {
+            console.warn("Нет user_id — бот не сможет прислать уведомление");
+            return;
+        }
+        try {
+            await fetch("https://tamagotchi.layero.app/api/sleep/schedule", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    user_id: userId,
+                    pet_name: state.petName || "Питомец",
+                    duration_seconds: Math.round(durationMs / 1000),
+                }),
+            });
+        } catch (e) {
+            console.warn("Не удалось запланировать уведомление:", e);
+        }
     }
 
     let sleepTickerId = null;
