@@ -30,6 +30,13 @@
     const SLEEP_FAST_GAIN = 0.5;
     const SLEEP_DEEP_GAIN = 1.0;
 
+        // Статы, которые тратятся во сне (за минуту сна)
+    const SLEEP_DECAY_PER_MIN = {
+        hunger: 2.0,
+        happiness: 1.5,
+        cleanliness: 1.5,
+    };
+
     const defaultState = () => ({
         petName: null,
         coins: 100,
@@ -76,10 +83,26 @@
         if (now >= state.sleepUntil) {
             const gain = state.sleepGain || 0;
             state.stats.energy = Math.max(0, Math.min(100, state.stats.energy + Math.round(gain * 100)));
+            applySleepDecay();
             state.sleepUntil = null;
             state.sleepGain = 0;
             save();
         }
+    }
+
+    function applySleepDecay() {
+        if (!state.sleepStartedAt) return 0;
+        const elapsedMin = (Date.now() - state.sleepStartedAt) / 60000;
+        if (elapsedMin <= 0) {
+            state.sleepStartedAt = null;
+            return 0;
+        }
+        for (const [key, rate] of Object.entries(SLEEP_DECAY_PER_MIN)) {
+            const delta = rate * elapsedMin;
+            state.stats[key] = Math.max(0, state.stats[key] - delta);
+        }
+        state.sleepStartedAt = null;
+        return elapsedMin;
     }
 
     const $ = (id) => document.getElementById(id);
@@ -371,6 +394,7 @@
     function startSleep(durationMs, gainRatio) {
         state.sleepUntil = Date.now() + durationMs;
         state.sleepGain = gainRatio;
+        state.sleepStartedAt = Date.now();
         save();
         sleepModalEl.classList.add("hidden");
         render();
@@ -407,13 +431,14 @@
                 clearInterval(sleepTickerId);
                 sleepTickerId = null;
                 const gain = state.sleepGain || 0;
+                const sleptMin = applySleepDecay();
                 state.stats.energy = Math.max(0, Math.min(100, state.stats.energy + Math.round(gain * 100)));
                 state.sleepUntil = null;
                 state.sleepGain = 0;
                 save();
                 render();
                 if (tg) tg.HapticFeedback?.notificationOccurred("success");
-                alert("Питомец проснулся! Энергия восстановлена.");
+                alert(`Питомец проснулся! Энергия восстановлена.\nСпал ${Math.round(sleptMin)} мин · потрачено: 🍖 −${Math.round(sleptMin * SLEEP_DECAY_PER_MIN.hunger)}, 😊 −${Math.round(sleptMin * SLEEP_DECAY_PER_MIN.happiness)}, 🧼 −${Math.round(sleptMin * SLEEP_DECAY_PER_MIN.cleanliness)}`);
                 return;
             }
             updateSleepTimer();
