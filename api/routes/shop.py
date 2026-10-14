@@ -63,6 +63,23 @@ async def list_items():
         if not v["special"]
     ]
 
+@router.get("/inventory/granted")
+async def get_granted_items(
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """Возвращает предметы, выданные юзеру через БД (выдал админ через SQL)."""
+    result = await session.execute(
+        select(InventoryItem).where(InventoryItem.user_id == user.id)
+    )
+    items = result.scalars().all()
+    return {
+        "items": [
+            {"item_id": it.item_id, "equipped": it.equipped}
+            for it in items
+        ]
+    }
+
 
 @router.get("/inventory")
 async def get_inventory(

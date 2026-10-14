@@ -767,4 +767,29 @@
     else showGame();
     if (isSleeping()) startSleepTicker();
     save();
+        async function syncGrantedItems() {
+        const initData = tg?.initData;
+        if (!initData) return;
+        try {
+            const res = await fetch("https://tamagotchi.layero.app/api/inventory/granted", {
+                headers: { "Authorization": "tma " + initData },
+            });
+            if (!res.ok) return;
+            const data = await res.json();
+            for (const it of data.items) {
+                if (!state.owned.includes(it.item_id)) {
+                    state.owned.push(it.item_id);
+                }
+                if (it.equipped && !state.equipped) {
+                    state.equipped = it.item_id;
+                }
+            }
+            save();
+            render();
+        } catch (e) {
+            console.warn("syncGrantedItems failed:", e);
+        }
+    }
+
+    syncGrantedItems();
 })();
