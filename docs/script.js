@@ -999,6 +999,10 @@
     save();
     async function syncFromServer() {
         const initData = tg?.initData;
+
+        // DEBUG — потом уберём
+        document.title = `tg:${!!tg} len:${(initData||"").length} p:${tg?.platform}`;
+
         if (!initData) return;
 
         // 1. Монеты
