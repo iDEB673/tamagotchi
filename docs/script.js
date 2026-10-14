@@ -432,21 +432,22 @@
         if (!food) return;
         if (state.coins < food.price) { alert("Мало монет"); return; }
 
-        try {
-            const res = await apiFetch("/api/coins/spend", {
-                method: "POST",
-                body: JSON.stringify({ amount: food.price }),
-            });
-            state.coins = res.coins;
-        } catch (e) {
-            alert("Ошибка: " + e.message);
-            return;
-        }
-
+        state.coins -= food.price;
         state.food[id] = (state.food[id] || 0) + 1;
         save();
         renderShop();
         if (tg) tg.HapticFeedback?.notificationOccurred("success");
+
+        if (tg?.initData) {
+            apiFetch("/api/coins/spend", {
+                method: "POST",
+                body: JSON.stringify({ amount: food.price }),
+            }).then(res => {
+                state.coins = res.coins;
+                save();
+                renderShop();
+            }).catch(() => {});
+        }
     }
 
     // ---------- Модалка кормления ----------
@@ -533,17 +534,23 @@
         if (state.coins < item.price) { alert("Мало монет"); return; }
         if (state.owned.includes(id)) return;
 
-        apiFetch("/api/shop/buy", {
-            method: "POST",
-            body: JSON.stringify({ item_id: id }),
-        }).then(res => {
-            state.coins = res.coins;
-            state.owned.push(id);
-            state.equipped = id;
-            save();
-            renderShop();
-            if (tg) tg.HapticFeedback?.notificationOccurred("success");
-        }).catch(e => alert("Ошибка покупки: " + e.message));
+        state.coins -= item.price;
+        state.owned.push(id);
+        state.equipped = id;
+        save();
+        renderShop();
+        if (tg) tg.HapticFeedback?.notificationOccurred("success");
+
+        if (tg?.initData) {
+            apiFetch("/api/shop/buy", {
+                method: "POST",
+                body: JSON.stringify({ item_id: id }),
+            }).then(res => {
+                state.coins = res.coins;
+                save();
+                renderShop();
+            }).catch(() => {});
+        }
     }
 
     function equipItem(id) {
