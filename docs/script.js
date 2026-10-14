@@ -2,6 +2,19 @@
     const tg = window.Telegram?.WebApp;
     if (tg) { tg.ready(); tg.expand(); }
 
+    async function apiFetch(path, options = {}) {
+        const initData = tg?.initData;
+        if (!initData) throw new Error("No initData");
+        const headers = {
+            "Content-Type": "application/json",
+            "Authorization": "tma " + initData,
+            ...(options.headers || {}),
+        };
+        const res = await fetch("https://tamagotchi.layero.app" + path, { ...options, headers });
+        if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
+        return res.json();
+    }
+
     const STORAGE_KEY = "tamagotchi_demo_v5";
 
     const DECAY_PER_HOUR = { hunger: 5, happiness: 4, energy: 3, cleanliness: 3 };
@@ -194,19 +207,33 @@
     function showGame() { hideAll(); gameEl.classList.remove("hidden"); render(); }
     function openGameChooser() { if (isSleeping()) return; hideAll(); chooserEl.classList.remove("hidden"); }
 
-    function applyAction(name) {
+    async function applyAction(name) {
         const action = ACTIONS[name];
         if (!action || isSleeping()) return;
-        if (action.cost > 0 && state.coins < action.cost) {
-            alert(`Нужно ${action.cost} монет. Заработай в мини-игре!`);
-            return;
+
+        if (action.cost > 0) {
+            if (state.coins < action.cost) {
+                alert(`Нужно ${action.cost} монет. Заработай в мини-игре!`);
+                return;
+            }
+            try {
+                const res = await apiFetch("/api/coins/spend", {
+                    method: "POST",
+                    body: JSON.stringify({ amount: action.cost }),
+                });
+                state.coins = res.coins;
+            } catch (e) {
+                alert("Ошибка: " + e.message);
+                return;
+            }
         }
+
         for (const [key, delta] of Object.entries(action)) {
             if (key === "cost") continue;
             state.stats[key] = Math.max(0, Math.min(100, state.stats[key] + delta));
         }
-        state.coins = Math.max(0, state.coins - action.cost);
-        save(); render();
+        save();
+        render();
         if (tg) tg.HapticFeedback?.impactOccurred("light");
     }
 
@@ -330,17 +357,26 @@
         }
     }
 
-    function buyItem(id) {
+    async function buyItem(id) {
         const item = SHOP_ITEMS[id];
         if (!item) return;
         if (state.coins < item.price) { alert("Мало монет"); return; }
         if (state.owned.includes(id)) return;
-        state.coins -= item.price;
-        state.owned.push(id);
-        state.equipped = id;   // сразу надеваем после покупки
-        save();
-        renderShop();
-        if (tg) tg.HapticFeedback?.notificationOccurred("success");
+
+        try {
+            const res = await apiFetch("/api/shop/buy", {
+                method: "POST",
+                body: JSON.stringify({ item_id: id }),
+            });
+            state.coins = res.coins;
+            state.owned.push(id);
+            state.equipped = id;
+            save();
+            renderShop();
+            if (tg) tg.HapticFeedback?.notificationOccurred("success");
+        } catch (e) {
+            alert("Ошибка покупки: " + e.message);
+        }
     }
 
     function equipItem(id) {
@@ -409,26 +445,38 @@
         mgTimeoutId = setTimeout(() => { if (mgActive) endMinigame(); }, MG_DURATION * 1000 + 50);
     }
 
-    function endMinigame() {
+    async function endMinigame() {
         if (!mgActive) return;
         mgActive = false;
         if (mgTickerId) { clearInterval(mgTickerId); mgTickerId = null; }
         if (mgTimeoutId) { clearTimeout(mgTimeoutId); mgTimeoutId = null; }
 
         const win = mgScore >= MG_GOAL;
-        if (win) {
-            state.coins += MG_REWARD;
-            mgModalTitle.textContent = "Ты выиграл:";
-            mgModalReward.textContent = `+${MG_REWARD} 💰`;
-            mgModalReward.classList.remove("loss");
-            mgModalSub.textContent = `Накликал ${mgScore} раз`;
-        } else {
-            state.stats.happiness = Math.max(0, state.stats.happiness - MG_LOSS_PENALTY);
-            mgModalTitle.textContent = "Ты проиграл:";
-            mgModalReward.textContent = `−${MG_LOSS_PENALTY} 😢`;
-            mgModalReward.classList.add("loss");
-            mgModalSub.textContent = `Накликал ${mgScore} из ${MG_GOAL}`;
+
+        try {
+            const res = await apiFetch("/api/game/reward", {
+                method: "POST",
+                body: JSON.stringify({ game: "clicker", score: mgScore }),
+            });
+            state.coins = res.coins;
+            if (win) {
+                mgModalTitle.textContent = "Ты выиграл:";
+                mgModalReward.textContent = `+${res.reward} 💰`;
+                mgModalReward.classList.remove("loss");
+                mgModalSub.textContent = `Накликал ${mgScore} раз`;
+            } else {
+                state.stats.happiness = Math.max(0, state.stats.happiness - MG_LOSS_PENALTY);
+                mgModalTitle.textContent = "Ты проиграл:";
+                mgModalReward.textContent = `−${MG_LOSS_PENALTY} 😢`;
+                mgModalReward.classList.add("loss");
+                mgModalSub.textContent = `Накликал ${mgScore} из ${MG_GOAL}`;
+            }
+        } catch (e) {
+            // Сервер не ответил — показываем локально
+            mgModalTitle.textContent = win ? "Ты выиграл:" : "Ты проиграл:";
+            mgModalReward.textContent = win ? `+${MG_REWARD} 💰` : `−${MG_LOSS_PENALTY} 😢`;
         }
+
         state.gamesPlayed += 1;
         save();
         mgModalRepeat.disabled = state.stats.energy < MG_ENERGY_COST;
@@ -660,14 +708,29 @@
         }
         return false;
     }
-    function bbGameOver() {
+    async function bbGameOver() {
         bbCleanupGhosts();
         bbActive = false;
+
         let coins = 2;
-        if (bbScore >= 300) coins = 20; else if (bbScore >= 150) coins = 10; else if (bbScore >= 50) coins = 5;
-        state.coins += coins;
+        if (bbScore >= 300) coins = 20;
+        else if (bbScore >= 150) coins = 10;
+        else if (bbScore >= 50) coins = 5;
+
+        try {
+            const res = await apiFetch("/api/game/reward", {
+                method: "POST",
+                body: JSON.stringify({ game: "blockblast", score: bbScore }),
+            });
+            coins = res.reward;
+            state.coins = res.coins;
+        } catch (e) {
+            state.coins += coins;
+        }
+
         state.gamesPlayed += 1;
         save();
+
         $("bbResultReward").textContent = `+${coins} 💰`;
         $("bbResultSub").textContent = `Счёт: ${bbScore}`;
         bbModalEl.classList.remove("hidden");
@@ -767,15 +830,21 @@
     else showGame();
     if (isSleeping()) startSleepTicker();
     save();
-        async function syncGrantedItems() {
+    async function syncFromServer() {
         const initData = tg?.initData;
         if (!initData) return;
+
+        // 1. Монеты
         try {
-            const res = await fetch("https://tamagotchi.layero.app/api/inventory/granted", {
-                headers: { "Authorization": "tma " + initData },
-            });
-            if (!res.ok) return;
-            const data = await res.json();
+            const me = await apiFetch("/api/me");
+            state.coins = me.coins;
+        } catch (e) {
+            console.warn("me fetch failed:", e);
+        }
+
+        // 2. Выданные предметы
+        try {
+            const data = await apiFetch("/api/inventory/granted");
             for (const it of data.items) {
                 if (!state.owned.includes(it.item_id)) {
                     state.owned.push(it.item_id);
@@ -784,12 +853,13 @@
                     state.equipped = it.item_id;
                 }
             }
-            save();
-            render();
         } catch (e) {
-            console.warn("syncGrantedItems failed:", e);
+            console.warn("inventory fetch failed:", e);
         }
+
+        save();
+        render();
     }
 
-    syncGrantedItems();
+    syncFromServer();
 })();

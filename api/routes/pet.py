@@ -19,6 +19,15 @@ class NameRequest(BaseModel):
     name: str
 
 
+class SpendRequest(BaseModel):
+    amount: int
+
+
+class GameRewardRequest(BaseModel):
+    game: str
+    score: int
+
+
 @router.get("/me")
 async def get_me(user: User = Depends(get_current_user)):
     return {
@@ -42,7 +51,6 @@ async def get_pet(
     pet_logic.apply_decay(pet)
     await session.commit()
     await session.refresh(pet)
-
     return pet_logic.pet_to_dict(pet)
 
 
@@ -67,34 +75,45 @@ async def set_pet_name(
     return pet_logic.pet_to_dict(pet)
 
 
-@router.post("/action")
-async def do_action(
-    payload: ActionRequest,
+@router.post("/coins/spend")
+async def spend_coins(
+    payload: SpendRequest,
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    result = await session.execute(select(Pet).where(Pet.user_id == user.id))
-    pet = result.scalar_one_or_none()
-    if pet is None:
-        raise HTTPException(status_code=404, detail="Pet not found")
+    if payload.amount <= 0:
+        raise HTTPException(400, "Amount must be positive")
+    if user.coins < payload.amount:
+        raise HTTPException(400, "Not enough coins")
 
-    pet_logic.apply_decay(pet)
-
-    ok = pet_logic.apply_action(pet, payload.action)
-    if not ok:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Unknown action: {payload.action}",
-        )
-
-    if user.coins > 0:
-        user.coins -= 1
-
+    user.coins -= payload.amount
     await session.commit()
-    await session.refresh(pet)
     await session.refresh(user)
+    return {"ok": True, "coins": user.coins}
 
-    return {
-        "pet": pet_logic.pet_to_dict(pet),
-        "coins": user.coins,
-    }
+
+@router.post("/game/reward")
+async def game_reward(
+    payload: GameRewardRequest,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    reward = 0
+    if payload.game == "clicker":
+        reward = 5 if payload.score >= 30 else 0
+    elif payload.game == "blockblast":
+        if payload.score >= 300:
+            reward = 20
+        elif payload.score >= 150:
+            reward = 10
+        elif payload.score >= 50:
+            reward = 5
+        else:
+            reward = 2
+    else:
+        raise HTTPException(400, f"Unknown game: {payload.game}")
+
+    user.coins += reward
+    await session.commit()
+    await session.refresh(user)
+    return {"ok": True, "reward": reward, "coins": user.coins}
