@@ -118,6 +118,18 @@ body {
     cursor: not-allowed;
 }
 
+.onboarding__button--secondary {
+    background: transparent;
+    color: var(--text-muted);
+    border: 2px solid var(--bg-card);
+    margin-top: 8px;
+}
+
+.onboarding__button--secondary:hover {
+    background: var(--bg-card);
+    color: var(--text);
+}
+
 /* ---------- Основной экран ---------- */
 
 .game {
@@ -141,6 +153,14 @@ body {
     font-size: 16px;
     color: var(--yellow);
     font-weight: 600;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 8px;
+    transition: background 0.15s;
+}
+
+.header__coins:active {
+    background: var(--bg-card);
 }
 
 .header__energy {
@@ -212,12 +232,36 @@ body {
     min-height: 0;
 }
 
-.pet__sprite {
-    max-width: 70%;
+.pet__stack {
+    position: relative;
+    width: 70%;
+    max-width: 320px;
+    aspect-ratio: 1 / 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     max-height: 100%;
+}
+
+.pet__sprite {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
     object-fit: contain;
     image-rendering: pixelated;
+    pointer-events: none;
     animation: bob 3s ease-in-out infinite;
+}
+
+.pet__hat {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    image-rendering: pixelated;
+    pointer-events: none;
 }
 
 .actions {
@@ -314,7 +358,7 @@ body {
     background: #2a3746;
 }
 
-/* ---------- Модалка результата мини-игры ---------- */
+/* ---------- Модалка ---------- */
 
 .mg-modal {
     position: absolute;
@@ -431,7 +475,7 @@ body {
     font-weight: 600;
 }
 
-/* ---------- Кнопки сна в модалке ---------- */
+/* ---------- Кнопки сна ---------- */
 
 .sleep-option {
     display: block;
@@ -464,29 +508,6 @@ body {
 .sleep-option__sub {
     font-size: 13px;
     color: #666;
-}
-
-/* ---------- Экран-превью мини-игры ---------- */
-
-.mg-intro-energy {
-    background: var(--bg-card);
-    border-radius: 12px;
-    padding: 12px;
-    margin-bottom: 16px;
-    color: var(--yellow);
-    font-size: 15px;
-}
-
-.onboarding__button--secondary {
-    background: transparent;
-    color: var(--text-muted);
-    border: 2px solid var(--bg-card);
-    margin-top: 8px;
-}
-
-.onboarding__button--secondary:hover {
-    background: var(--bg-card);
-    color: var(--text);
 }
 
 /* ---------- Выбор игры ---------- */
@@ -526,6 +547,17 @@ body {
 .game-choice__sub {
     font-size: 12px;
     color: var(--text-muted);
+}
+
+/* ---------- Превью мини-игры ---------- */
+
+.mg-intro-energy {
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 16px;
+    color: var(--yellow);
+    font-size: 15px;
 }
 
 /* ---------- Block Blast ---------- */
@@ -624,7 +656,6 @@ body {
     box-shadow: inset 0 0 0 1px rgba(255,255,255,0.25);
 }
 
-/* Призрак фигуры, следующий за пальцем */
 .bb-ghost {
     position: fixed;
     display: grid;
@@ -644,34 +675,6 @@ body {
 
 .bb-ghost .bb-mini--filled {
     box-shadow: inset 0 0 0 1px rgba(255,255,255,0.35);
-}
-
-/* ---------- Стек питомец+шапка ---------- */
-
-.pet__stack {
-    position: relative;
-    width: 70%;
-    max-width: 320px;
-    aspect-ratio: 1 / 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    max-height: 100%;
-}
-
-.pet__sprite,
-.pet__hat {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    image-rendering: pixelated;
-    pointer-events: none;
-}
-
-.pet__sprite {
-    animation: bob 3s ease-in-out infinite;
 }
 
 /* ---------- Магазин ---------- */
