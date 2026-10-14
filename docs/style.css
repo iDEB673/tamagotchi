@@ -771,3 +771,20 @@ body {
 .shop-item__btn--unequip {
     background: var(--red);
 }
+
+/* ---------- Секции магазина ---------- */
+
+.shop-section {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 10px 4px 4px;
+}
+
+.shop-empty {
+    text-align: center;
+    color: var(--text-muted);
+    padding: 40px 20px;
+}

@@ -235,48 +235,98 @@
         list.innerHTML = "";
         shopCoinsEl.textContent = state.coins;
 
-        for (const [id, item] of Object.entries(SHOP_ITEMS)) {
-            if (item.hidden) continue;
-            const owned = state.owned.includes(id);
-            const equipped = state.equipped === id;
+        const owned = state.owned;
+        const equipped = state.equipped;
 
-            const row = document.createElement("div");
-            row.className = "shop-item";
-            if (equipped) row.classList.add("shop-item--equipped");
-            else if (owned) row.classList.add("shop-item--owned");
+        // ── Секция "Мои предметы" ──
+        if (owned.length > 0) {
+            const head1 = document.createElement("div");
+            head1.className = "shop-section";
+            head1.textContent = "Мои предметы";
+            list.appendChild(head1);
 
-            const preview = document.createElement("div");
-            preview.className = "shop-item__preview";
-            preview.textContent = item.emoji;
+            for (const id of owned) {
+                const item = SHOP_ITEMS[id];
+                if (!item) continue;
 
-            const info = document.createElement("div");
-            info.className = "shop-item__info";
-            info.innerHTML = `
-                <div class="shop-item__name">${item.name}</div>
-                <div class="shop-item__price">${owned ? "Куплено" : item.price + " 💰"}</div>
-            `;
+                const row = document.createElement("div");
+                row.className = "shop-item shop-item--owned";
+                if (equipped === id) row.classList.add("shop-item--equipped");
 
-            const btn = document.createElement("button");
-            btn.className = "shop-item__btn";
+                const preview = document.createElement("div");
+                preview.className = "shop-item__preview";
+                preview.textContent = item.emoji;
 
-            if (!owned) {
+                const info = document.createElement("div");
+                info.className = "shop-item__info";
+                info.innerHTML = `
+                    <div class="shop-item__name">${item.name}</div>
+                    <div class="shop-item__price">${equipped === id ? "Надето" : "В инвентаре"}</div>
+                `;
+
+                const btn = document.createElement("button");
+                btn.className = "shop-item__btn";
+                if (equipped === id) {
+                    btn.textContent = "Снять";
+                    btn.classList.add("shop-item__btn--unequip");
+                    btn.addEventListener("click", () => unequipItem());
+                } else {
+                    btn.textContent = "Надеть";
+                    btn.classList.add("shop-item__btn--equip");
+                    btn.addEventListener("click", () => equipItem(id));
+                }
+
+                row.appendChild(preview);
+                row.appendChild(info);
+                row.appendChild(btn);
+                list.appendChild(row);
+            }
+        }
+
+        // ── Секция "Магазин" (что можно купить) ──
+        const buyable = Object.entries(SHOP_ITEMS)
+            .filter(([id, item]) => !item.hidden && !owned.includes(id));
+
+        if (buyable.length > 0) {
+            const head2 = document.createElement("div");
+            head2.className = "shop-section";
+            head2.textContent = "Магазин";
+            list.appendChild(head2);
+
+            for (const [id, item] of buyable) {
+                const row = document.createElement("div");
+                row.className = "shop-item";
+
+                const preview = document.createElement("div");
+                preview.className = "shop-item__preview";
+                preview.textContent = item.emoji;
+
+                const info = document.createElement("div");
+                info.className = "shop-item__info";
+                info.innerHTML = `
+                    <div class="shop-item__name">${item.name}</div>
+                    <div class="shop-item__price">${item.price} 💰</div>
+                `;
+
+                const btn = document.createElement("button");
+                btn.className = "shop-item__btn";
                 btn.textContent = "Купить";
                 btn.disabled = state.coins < item.price;
                 btn.addEventListener("click", () => buyItem(id));
-            } else if (equipped) {
-                btn.textContent = "Снять";
-                btn.classList.add("shop-item__btn--unequip");
-                btn.addEventListener("click", () => unequipItem());
-            } else {
-                btn.textContent = "Надеть";
-                btn.classList.add("shop-item__btn--equip");
-                btn.addEventListener("click", () => equipItem(id));
-            }
 
-            row.appendChild(preview);
-            row.appendChild(info);
-            row.appendChild(btn);
-            list.appendChild(row);
+                row.appendChild(preview);
+                row.appendChild(info);
+                row.appendChild(btn);
+                list.appendChild(row);
+            }
+        }
+
+        // ── Если ничего нет (маловероятно) ──
+        if (owned.length === 0 && buyable.length === 0) {
+            const empty = document.createElement("div");
+            empty.className = "shop-empty";
+            empty.textContent = "Пусто";
+            list.appendChild(empty);
         }
     }
 
