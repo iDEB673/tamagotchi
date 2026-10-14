@@ -46,13 +46,22 @@
         wizard_hat:   { name: "Шапка волшебника",   emoji: "🧙", price: 0, hidden: true },
     };
 
+        const FOOD_ITEMS = {
+        cola:     { name: "Кола",     emoji: "🥤", price: 3,  hunger: 7  },
+        kitkat:   { name: "Кит-Кат",  emoji: "🍫", price: 5,  hunger: 10 },
+        donut:    { name: "Пончик",   emoji: "🍩", price: 6,  hunger: 12 },
+        pizza:    { name: "Пицца",    emoji: "🍕", price: 7,  hunger: 14 },
+        shawarma: { name: "Шаурма",   emoji: "🌯", price: 15, hunger: 35 },
+    };
+
     const defaultState = () => ({
         petName: null, coins: 100,
         stats: { hunger: 100, happiness: 100, energy: 100, cleanliness: 100 },
         lastUpdate: Date.now(), gamesPlayed: 0,
         sleepUntil: null, sleepGain: 0, sleepStartedAt: null,
-        owned: [],         // ["cap", "wizard_hat"]
-        equipped: null,    // "cap" | null
+        owned: [],
+        equipped: null,
+        food: {},
     });
 
     let state = load() || defaultState();
@@ -60,7 +69,11 @@
     function load() {
         try {
             const raw = localStorage.getItem(STORAGE_KEY);
-            return raw ? JSON.parse(raw) : null;
+            if (!raw) return null;
+            const data = JSON.parse(raw);
+            if (!data.food) data.food = {};
+            if (!data.owned) data.owned = [];
+            return data;
         } catch { return null; }
     }
     function save() {
@@ -242,30 +255,53 @@
             const action = btn.dataset.action;
             if (action === "play") openGameChooser();
             else if (action === "sleep") openSleepModal();
+            else if (action === "feed") openFeedModal();
             else applyAction(action);
         });
     });
 
     // ---------- Магазин ----------
 
+    let shopTab = "clothes";
+
     $("openShop").addEventListener("click", () => {
         if (isSleeping()) return;
         hideAll();
         shopEl.classList.remove("hidden");
+        shopTab = "clothes";
+        updateShopTabs();
         renderShop();
     });
 
     $("shopClose").addEventListener("click", () => showGame());
+
+    document.querySelectorAll(".shop__tab").forEach(tab => {
+        tab.addEventListener("click", () => {
+            shopTab = tab.dataset.tab;
+            updateShopTabs();
+            renderShop();
+        });
+    });
+
+    function updateShopTabs() {
+        document.querySelectorAll(".shop__tab").forEach(t => {
+            t.classList.toggle("shop__tab--active", t.dataset.tab === shopTab);
+        });
+    }
 
     function renderShop() {
         const list = $("shopList");
         list.innerHTML = "";
         shopCoinsEl.textContent = state.coins;
 
+        if (shopTab === "clothes") renderClothesTab(list);
+        else if (shopTab === "food") renderFoodTab(list);
+    }
+
+    function renderClothesTab(list) {
         const owned = state.owned;
         const equipped = state.equipped;
 
-        // ── Секция "Мои предметы" ──
         if (owned.length > 0) {
             const head1 = document.createElement("div");
             head1.className = "shop-section";
@@ -310,7 +346,6 @@
             }
         }
 
-        // ── Секция "Магазин" (что можно купить) ──
         const buyable = Object.entries(SHOP_ITEMS)
             .filter(([id, item]) => !item.hidden && !owned.includes(id));
 
@@ -348,7 +383,6 @@
             }
         }
 
-        // ── Если ничего нет (маловероятно) ──
         if (owned.length === 0 && buyable.length === 0) {
             const empty = document.createElement("div");
             empty.className = "shop-empty";
@@ -357,26 +391,159 @@
         }
     }
 
-    async function buyItem(id) {
+    function renderFoodTab(list) {
+        const head = document.createElement("div");
+        head.className = "shop-section";
+        head.textContent = "Еда";
+        list.appendChild(head);
+
+        for (const [id, food] of Object.entries(FOOD_ITEMS)) {
+            const count = state.food[id] || 0;
+
+            const row = document.createElement("div");
+            row.className = "shop-item";
+
+            const preview = document.createElement("div");
+            preview.className = "shop-item__preview";
+            preview.textContent = food.emoji;
+
+            const info = document.createElement("div");
+            info.className = "shop-item__info";
+            info.innerHTML = `
+                <div class="shop-item__name">${food.name} ${count > 0 ? `<span style="color:#5288c1">×${count}</span>` : ""}</div>
+                <div class="shop-item__price">${food.price} 💰 · +${food.hunger} 🍖</div>
+            `;
+
+            const btn = document.createElement("button");
+            btn.className = "shop-item__btn";
+            btn.textContent = "Купить";
+            btn.disabled = state.coins < food.price;
+            btn.addEventListener("click", () => buyFood(id));
+
+            row.appendChild(preview);
+            row.appendChild(info);
+            row.appendChild(btn);
+            list.appendChild(row);
+        }
+    }
+
+    async function buyFood(id) {
+        const food = FOOD_ITEMS[id];
+        if (!food) return;
+        if (state.coins < food.price) { alert("Мало монет"); return; }
+
+        try {
+            const res = await apiFetch("/api/coins/spend", {
+                method: "POST",
+                body: JSON.stringify({ amount: food.price }),
+            });
+            state.coins = res.coins;
+        } catch (e) {
+            alert("Ошибка: " + e.message);
+            return;
+        }
+
+        state.food[id] = (state.food[id] || 0) + 1;
+        save();
+        renderShop();
+        if (tg) tg.HapticFeedback?.notificationOccurred("success");
+    }
+
+    // ---------- Модалка кормления ----------
+
+    const feedModalEl = $("feedModal");
+
+    function openFeedModal() {
+        if (isSleeping()) return;
+        renderFeedList();
+        feedModalEl.classList.remove("hidden");
+    }
+
+    function renderFeedList() {
+        const list = $("feedList");
+        list.innerHTML = "";
+
+        const ownedFoods = Object.entries(state.food).filter(([_, count]) => count > 0);
+
+        if (ownedFoods.length === 0) {
+            const empty = document.createElement("div");
+            empty.className = "shop-empty";
+            empty.textContent = "Холодильник пуст";
+            list.appendChild(empty);
+            return;
+        }
+
+        for (const [id, count] of ownedFoods) {
+            const food = FOOD_ITEMS[id];
+            if (!food) continue;
+
+            const row = document.createElement("div");
+            row.className = "feed-item";
+            if (state.stats.hunger >= 100) row.classList.add("feed-item--disabled");
+
+            row.innerHTML = `
+                <div class="feed-item__emoji">${food.emoji}</div>
+                <div class="feed-item__info">
+                    <div class="feed-item__name">${food.name}</div>
+                    <div class="feed-item__sub">+${food.hunger} 🍖</div>
+                </div>
+                <div class="feed-item__count">×${count}</div>
+            `;
+
+            row.addEventListener("click", () => eatFood(id));
+            list.appendChild(row);
+        }
+    }
+
+    function eatFood(id) {
+        const food = FOOD_ITEMS[id];
+        if (!food) return;
+        if (!state.food[id] || state.food[id] <= 0) return;
+        if (state.stats.hunger >= 100) {
+            alert("Питомец не голоден!");
+            return;
+        }
+
+        state.food[id] -= 1;
+        if (state.food[id] <= 0) delete state.food[id];
+
+        state.stats.hunger = Math.min(100, state.stats.hunger + food.hunger);
+        state.stats.happiness = Math.min(100, state.stats.happiness + 2);
+        save();
+
+        feedModalEl.classList.add("hidden");
+        render();
+        if (tg) tg.HapticFeedback?.impactOccurred("light");
+    }
+
+    $("feedCancel").addEventListener("click", () => feedModalEl.classList.add("hidden"));
+
+    $("feedShop").addEventListener("click", () => {
+        feedModalEl.classList.add("hidden");
+        hideAll();
+        shopEl.classList.remove("hidden");
+        shopTab = "food";
+        updateShopTabs();
+        renderShop();
+    });
+
+    function buyItem(id) {
         const item = SHOP_ITEMS[id];
         if (!item) return;
         if (state.coins < item.price) { alert("Мало монет"); return; }
         if (state.owned.includes(id)) return;
 
-        try {
-            const res = await apiFetch("/api/shop/buy", {
-                method: "POST",
-                body: JSON.stringify({ item_id: id }),
-            });
+        apiFetch("/api/shop/buy", {
+            method: "POST",
+            body: JSON.stringify({ item_id: id }),
+        }).then(res => {
             state.coins = res.coins;
             state.owned.push(id);
             state.equipped = id;
             save();
             renderShop();
             if (tg) tg.HapticFeedback?.notificationOccurred("success");
-        } catch (e) {
-            alert("Ошибка покупки: " + e.message);
-        }
+        }).catch(e => alert("Ошибка покупки: " + e.message));
     }
 
     function equipItem(id) {
