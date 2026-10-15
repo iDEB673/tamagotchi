@@ -680,6 +680,13 @@
                 state.coins = res.coins;
                 reward = res.reward;
             } catch (e) { if (e.message === "OFFLINE") state.coins += reward; }
+            // Сохраняем счёт кликера в лидерборд
+            try {
+                await apiFetch("/api/clicker/score", {
+                    method: "POST",
+                    body: JSON.stringify({ score: mgScore }),
+                });
+            } catch (e) { console.warn("clicker score save:", e); }
         } else state.coins += reward;
         if (win) {
             mgModalTitle.textContent = "Ты выиграл:";
@@ -698,7 +705,8 @@
         mgModalRepeat.disabled = state.stats.energy < MG_ENERGY_COST;
         mgModalEl.classList.remove("hidden");
     }
-    mgClickBtn.addEventListener("click", () => {
+    
+        mgClickBtn.addEventListener("click", () => {
         if (!mgActive) return;
         mgScore += 1;
         mgScoreEl.textContent = mgScore;
@@ -986,6 +994,12 @@
     });
     $("bbLevelsCancel").addEventListener("click", () => openGameChooser());
 
+        // ---------- Обработчики выбора игры ----------
+
+    $("chooseClicker").addEventListener("click", () => openMinigameIntro());
+    $("chooseBlock").addEventListener("click", () => openBbLevels());
+    $("chooseCancel").addEventListener("click", () => showGame());
+
     function startBlockBlast(levelKey, infinite) {
         bbCleanupGhosts();
         if (isSleeping()) return;
@@ -1058,28 +1072,45 @@
 
     // ---------- Таблица лидеров ----------
 
-    let lbTab = "easy";
+    let lbGame = "blockblast";
+    let lbLevel = "easy";
 
     $("chooseLeaderboard").addEventListener("click", () => {
         hideAll();
         leaderboardEl.classList.remove("hidden");
-        lbTab = "easy";
+        lbGame = "blockblast";
+        lbLevel = "easy";
         updateLbTabs();
         loadLeaderboard();
     });
     $("leaderboardClose").addEventListener("click", () => openGameChooser());
 
-    document.querySelectorAll("[data-ltab]").forEach(t => {
+    document.querySelectorAll("[data-lgame]").forEach(t => {
         t.addEventListener("click", () => {
-            lbTab = t.dataset.ltab;
+            lbGame = t.dataset.lgame;
             updateLbTabs();
             loadLeaderboard();
         });
     });
-    function updateLbTabs() {
-        document.querySelectorAll("[data-ltab]").forEach(t => {
-            t.classList.toggle("shop__tab--active", t.dataset.ltab === lbTab);
+    document.querySelectorAll("[data-ltab]").forEach(t => {
+        t.addEventListener("click", () => {
+            lbLevel = t.dataset.ltab;
+            updateLbTabs();
+            loadLeaderboard();
         });
+    });
+
+    function updateLbTabs() {
+        document.querySelectorAll("[data-lgame]").forEach(t => {
+            t.classList.toggle("shop__tab--active", t.dataset.lgame === lbGame);
+        });
+        document.querySelectorAll("[data-ltab]").forEach(t => {
+            t.classList.toggle("shop__tab--active", t.dataset.ltab === lbLevel);
+        });
+        const levelTabs = $("lbLevelTabs");
+        if (levelTabs) {
+            levelTabs.style.display = (lbGame === "blockblast") ? "grid" : "none";
+        }
     }
 
     async function loadLeaderboard() {
@@ -1089,8 +1120,14 @@
             list.innerHTML = '<div class="shop-empty">Открой через Telegram</div>';
             return;
         }
+        let url;
+        if (lbGame === "blockblast") {
+            url = "/api/blockblast/leaderboard?level=" + lbLevel;
+        } else {
+            url = "/api/clicker/leaderboard";
+        }
         try {
-            const data = await apiFetch("/api/blockblast/leaderboard?level=" + lbTab);
+            const data = await apiFetch(url);
             list.innerHTML = "";
             if (!data.leaderboard || data.leaderboard.length === 0) {
                 list.innerHTML = '<div class="shop-empty">Пока никого. Будь первым!</div>';
