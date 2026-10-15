@@ -25,7 +25,10 @@
     <div id="game" class="screen game hidden">
         <header class="header">
             <div class="header__name" id="petName">Питомец</div>
-            <div class="header__coins">💰 <span id="coins">100</span></div>
+            <div class="header__right">
+                <button id="adminBtn" class="header__admin hidden">🛠</button>
+                <div class="header__coins">💰 <span id="coins">100</span></div>
+            </div>
         </header>
         <div class="stats">
             <div class="stat"><div class="stat__icon">🍖</div><div class="stat__bar"><div class="stat__fill" id="bar-hunger"></div></div><div class="stat__num" id="num-hunger">100</div></div>
@@ -224,6 +227,23 @@
             <div class="mg-modal__buttons">
                 <button id="sleepCancel" class="mg-modal__btn mg-modal__btn--wide">Отмена</button>
             </div>
+        </div>
+    </div>
+
+        <!-- Админ-панель -->
+    <div id="adminPanel" class="screen shop hidden">
+        <header class="header">
+            <div class="header__name">🛠 Админ</div>
+            <div class="header__coins">💰 <span id="adminCoins">0</span></div>
+        </header>
+        <div class="shop__tabs">
+            <button class="shop__tab shop__tab--active" data-atab="items">🎩 Предметы</button>
+            <button class="shop__tab" data-atab="food">🍔 Еда</button>
+            <button class="shop__tab" data-atab="tools">🧪 Тесты</button>
+        </div>
+        <div class="shop__list" id="adminList"></div>
+        <div class="actions">
+            <button class="action action--wide" id="adminClose">← Назад</button>
         </div>
     </div>
 
