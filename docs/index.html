@@ -4,18 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Мой питомец</title>
-    <link rel="stylesheet" href="style.css?v=18">
-    <script src="telegram-web-app.js?v=18"></script>
+    <link rel="stylesheet" href="style.css?v=19">
+    <script src="telegram-web-app.js?v=19"></script>
 </head>
 <body>
 
-<script>
-    setTimeout(() => {
-        document.title = "URL:" + location.href.slice(0, 60) + " HASH:" + (location.hash || "empty").slice(0, 30);
-    }, 100);
-</script>
-
-    <!-- Онбординг -->
     <div id="onboarding" class="screen onboarding">
         <div class="onboarding__content">
             <div class="onboarding__emoji">🐣</div>
@@ -27,7 +20,6 @@
         </div>
     </div>
 
-    <!-- Основной экран -->
     <div id="game" class="screen game hidden">
         <header class="header">
             <div class="header__name" id="petName">Питомец</div>
@@ -60,7 +52,6 @@
         </div>
     </div>
 
-    <!-- Магазин -->
     <div id="shop" class="screen shop hidden">
         <header class="header">
             <div class="header__name">Магазин</div>
@@ -74,7 +65,6 @@
         <div class="actions"><button class="action action--wide" id="shopClose">← Назад</button></div>
     </div>
 
-    <!-- Модалка кормления -->
     <div id="feedModal" class="mg-modal hidden">
         <div class="mg-modal__content">
             <h2 class="mg-modal__title">Чем покормить?</h2>
@@ -88,7 +78,6 @@
         </div>
     </div>
 
-    <!-- Выбор игры -->
     <div id="gameChooser" class="screen onboarding hidden">
         <div class="onboarding__content">
             <div class="onboarding__emoji">🎮</div>
@@ -105,7 +94,14 @@
                 <div class="game-choice__emoji">🧩</div>
                 <div class="game-choice__text">
                     <div class="game-choice__title">Block Blast</div>
-                    <div class="game-choice__sub">3 уровня сложности · 15 ⚡</div>
+                    <div class="game-choice__sub">3 уровня · 15 ⚡</div>
+                </div>
+            </button>
+            <button id="chooseSudoku" class="game-choice">
+                <div class="game-choice__emoji">🔢</div>
+                <div class="game-choice__text">
+                    <div class="game-choice__title">Судоку</div>
+                    <div class="game-choice__sub">3 уровня · 15 ⚡ · до +50 💰</div>
                 </div>
             </button>
             <button id="chooseLeaderboard" class="game-choice">
@@ -119,13 +115,11 @@
         </div>
     </div>
 
-    <!-- Выбор сложности -->
     <div id="bbLevels" class="screen onboarding hidden">
         <div class="onboarding__content">
             <div class="onboarding__emoji">🧩</div>
-            <h1 class="onboarding__title">Сложность</h1>
+            <h1 class="onboarding__title">Block Blast — сложность</h1>
             <p class="onboarding__text">Стоимость входа: <b>15 ⚡</b></p>
-
             <button class="level-btn level-btn--easy" data-level="easy">
                 <div class="level-btn__emoji">🟢</div>
                 <div class="level-btn__text">
@@ -133,7 +127,6 @@
                     <div class="level-btn__sub">Поле 6×6 · до +15 💰</div>
                 </div>
             </button>
-
             <button class="level-btn level-btn--normal" data-level="normal">
                 <div class="level-btn__emoji">🟡</div>
                 <div class="level-btn__text">
@@ -141,7 +134,6 @@
                     <div class="level-btn__sub">Поле 8×8 · до +40 💰</div>
                 </div>
             </button>
-
             <button class="level-btn level-btn--hard" data-level="hard">
                 <div class="level-btn__emoji">🔴</div>
                 <div class="level-btn__text">
@@ -149,12 +141,40 @@
                     <div class="level-btn__sub">Поле 10×10 · до +75 💰</div>
                 </div>
             </button>
-
             <button id="bbLevelsCancel" class="onboarding__button onboarding__button--secondary">← Назад</button>
         </div>
     </div>
 
-    <!-- Кликер превью -->
+    <div id="sudokuLevels" class="screen onboarding hidden">
+        <div class="onboarding__content">
+            <div class="onboarding__emoji">🔢</div>
+            <h1 class="onboarding__title">Судоку</h1>
+            <p class="onboarding__text">Стоимость входа: <b>15 ⚡</b></p>
+            <button class="level-btn level-btn--easy" data-slevel="easy">
+                <div class="level-btn__emoji">🟢</div>
+                <div class="level-btn__text">
+                    <div class="level-btn__title">Лёгкий</div>
+                    <div class="level-btn__sub">5 ошибок · +10 💰</div>
+                </div>
+            </button>
+            <button class="level-btn level-btn--normal" data-slevel="normal">
+                <div class="level-btn__emoji">🟡</div>
+                <div class="level-btn__text">
+                    <div class="level-btn__title">Средний</div>
+                    <div class="level-btn__sub">3 ошибки · +25 💰</div>
+                </div>
+            </button>
+            <button class="level-btn level-btn--hard" data-slevel="hard">
+                <div class="level-btn__emoji">🔴</div>
+                <div class="level-btn__text">
+                    <div class="level-btn__title">Сложный</div>
+                    <div class="level-btn__sub">3 ошибки · +50 💰</div>
+                </div>
+            </button>
+            <button id="sudokuLevelsCancel" class="onboarding__button onboarding__button--secondary">← Назад</button>
+        </div>
+    </div>
+
     <div id="minigameIntro" class="screen onboarding hidden">
         <div class="onboarding__content">
             <div class="onboarding__emoji">🎮</div>
@@ -166,7 +186,6 @@
         </div>
     </div>
 
-    <!-- Кликер -->
     <div id="minigame" class="screen minigame hidden">
         <header class="header">
             <div class="header__name">Кликер</div>
@@ -190,7 +209,6 @@
         </div>
     </div>
 
-    <!-- Block Blast -->
     <div id="blockblast" class="screen blockblast hidden">
         <header class="header">
             <div class="header__name">Block Blast <span id="bbLevelIcon">🟢</span></div>
@@ -223,61 +241,51 @@
                 </div>
             </div>
         </div>
-    </div>
-
-    <!-- Модалка сна -->
-    <div id="sleepModal" class="mg-modal hidden">
-        <div class="mg-modal__content">
-            <h2 class="mg-modal__title">Как спать будем?</h2>
-            <button id="sleepFast" class="sleep-option">
-                <div class="sleep-option__title">💤 Быстрый сон</div>
-                <div class="sleep-option__sub">5 минут · +50% энергии</div>
-            </button>
-            <button id="sleepDeep" class="sleep-option">
-                <div class="sleep-option__title">😴 Глубокий сон</div>
-                <div class="sleep-option__sub">10 минут · 100% энергии</div>
-            </button>
-            <div class="mg-modal__buttons">
-                <button id="sleepCancel" class="mg-modal__btn mg-modal__btn--wide">Отмена</button>
+        <div id="bbWinModal" class="mg-modal hidden">
+            <div class="mg-modal__content">
+                <div class="mg-modal__emoji">🏆</div>
+                <h2 class="mg-modal__title">Победа!</h2>
+                <div class="mg-modal__reward" id="bbWinReward">+75 💰</div>
+                <p class="mg-modal__sub" id="bbWinSub">Счёт: 700</p>
+                <button id="bbWinInfinite" class="mg-modal__btn mg-modal__btn--primary mg-modal__btn--wide" style="margin-bottom:10px;">
+                    ♾ Бесконечный режим
+                </button>
+                <div class="mg-modal__buttons">
+                    <button id="bbWinRepeat" class="mg-modal__btn">Повторить</button>
+                    <button id="bbWinExit" class="mg-modal__btn">Выйти</button>
+                </div>
             </div>
         </div>
     </div>
 
-        <!-- Админ-панель -->
-    <div id="adminPanel" class="screen shop hidden">
+    <!-- Судоку -->
+    <div id="sudoku" class="screen sudoku hidden">
         <header class="header">
-            <div class="header__name">🛠 Админ</div>
-            <div class="header__coins">💰 <span id="adminCoins">0</span></div>
+            <div class="header__name">Судоку <span id="sdLevel">🟢</span></div>
+            <div class="header__energy">❌ <span id="sdMistakes">0</span>/<span id="sdMax">5</span></div>
         </header>
-        <div class="shop__tabs">
-            <button class="shop__tab shop__tab--active" data-atab="items">🎩 Предметы</button>
-            <button class="shop__tab" data-atab="food">🍔 Еда</button>
-            <button class="shop__tab" data-atab="tools">🧪 Тесты</button>
+        <div class="sd-grid" id="sdGrid"></div>
+        <div class="sd-numpad" id="sdNumpad"></div>
+        <div class="sd-actions">
+            <button class="sd-action" id="sdBack">← Назад</button>
+            <button class="sd-action" id="sdUndo">↩ Отмена</button>
+            <button class="sd-action" id="sdNotes">📝 Заметки</button>
+            <button class="sd-action" id="sdHint">💡 −20💰</button>
         </div>
-        <div class="shop__list" id="adminList"></div>
-        <div class="actions">
-            <button class="action action--wide" id="adminClose">← Назад</button>
-        </div>
-    </div>
-
-        <!-- Модалка победы -->
-    <div id="bbWinModal" class="mg-modal hidden">
-        <div class="mg-modal__content">
-            <div class="mg-modal__emoji">🏆</div>
-            <h2 class="mg-modal__title">Победа!</h2>
-            <div class="mg-modal__reward" id="bbWinReward">+75 💰</div>
-            <p class="mg-modal__sub" id="bbWinSub">Счёт: 700</p>
-            <button id="bbWinInfinite" class="mg-modal__btn mg-modal__btn--primary mg-modal__btn--wide" style="margin-bottom:10px;">
-                ♾ Бесконечный режим
-            </button>
-            <div class="mg-modal__buttons">
-                <button id="bbWinRepeat" class="mg-modal__btn">Повторить</button>
-                <button id="bbWinExit" class="mg-modal__btn">Выйти</button>
+        <div id="sdModal" class="mg-modal hidden">
+            <div class="mg-modal__content">
+                <h2 class="mg-modal__title" id="sdModalTitle">🎉 Решено!</h2>
+                <div class="mg-modal__reward" id="sdModalReward">+10 💰</div>
+                <p class="mg-modal__sub" id="sdModalSub">Отличная работа!</p>
+                <div class="mg-modal__buttons">
+                    <button id="sdModalBack" class="mg-modal__btn">Вернуться</button>
+                    <button id="sdModalRepeat" class="mg-modal__btn mg-modal__btn--primary">Ещё раз</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Экран лидерборда -->
+    <!-- Таблица лидеров -->
     <div id="leaderboard" class="screen shop hidden">
         <header class="header">
             <div class="header__name">🏆 Лидеры</div>
@@ -297,6 +305,40 @@
         </div>
     </div>
 
-    <script src="script.js?v=18"></script>
+    <!-- Админка -->
+    <div id="adminPanel" class="screen shop hidden">
+        <header class="header">
+            <div class="header__name">🛠 Админ</div>
+            <div class="header__coins">💰 <span id="adminCoins">0</span></div>
+        </header>
+        <div class="shop__tabs">
+            <button class="shop__tab shop__tab--active" data-atab="items">🎩 Предметы</button>
+            <button class="shop__tab" data-atab="food">🍔 Еда</button>
+            <button class="shop__tab" data-atab="tools">🧪 Тесты</button>
+        </div>
+        <div class="shop__list" id="adminList"></div>
+        <div class="actions">
+            <button class="action action--wide" id="adminClose">← Назад</button>
+        </div>
+    </div>
+
+    <div id="sleepModal" class="mg-modal hidden">
+        <div class="mg-modal__content">
+            <h2 class="mg-modal__title">Как спать будем?</h2>
+            <button id="sleepFast" class="sleep-option">
+                <div class="sleep-option__title">💤 Быстрый сон</div>
+                <div class="sleep-option__sub">5 минут · +50% энергии</div>
+            </button>
+            <button id="sleepDeep" class="sleep-option">
+                <div class="sleep-option__title">😴 Глубокий сон</div>
+                <div class="sleep-option__sub">10 минут · 100% энергии</div>
+            </button>
+            <div class="mg-modal__buttons">
+                <button id="sleepCancel" class="mg-modal__btn mg-modal__btn--wide">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js?v=19"></script>
 </body>
 </html>

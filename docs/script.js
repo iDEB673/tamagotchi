@@ -44,74 +44,36 @@
     const SLEEP_FAST_GAIN = 0.5, SLEEP_DEEP_GAIN = 1.0;
     const SLEEP_DECAY_PER_MIN = { hunger: 2.0, happiness: 1.5, cleanliness: 1.5 };
 
-    // ---------- Block Blast: конфиг ----------
-
     const BB_ENERGY_COST = 15;
 
     const BB_LEVELS = {
-        easy: {
-            label: "Лёгкий", emoji: "🟢", size: 6, winScore: 300,
-            rewards: [
-                { min: 500, coins: 15 },
-                { min: 300, coins: 10 },
-                { min: 200, coins: 7 },
-                { min: 150, coins: 5 },
-                { min: 100, coins: 3 },
-                { min: 50,  coins: 2 },
-                { min: 0,   coins: 0 },
-            ],
-        },
-        normal: {
-            label: "Средний", emoji: "🟡", size: 8, winScore: 500,
-            rewards: [
-                { min: 500, coins: 40 },
-                { min: 300, coins: 25 },
-                { min: 200, coins: 17 },
-                { min: 150, coins: 11 },
-                { min: 100, coins: 7 },
-                { min: 50,  coins: 4 },
-                { min: 0,   coins: 1 },
-            ],
-        },
-        hard: {
-            label: "Сложный", emoji: "🔴", size: 10, winScore: 700,
-            rewards: [
-                { min: 500, coins: 75 },
-                { min: 300, coins: 50 },
-                { min: 200, coins: 35 },
-                { min: 150, coins: 22 },
-                { min: 100, coins: 14 },
-                { min: 50,  coins: 8 },
-                { min: 0,   coins: 3 },
-            ],
-        },
+        easy: { label: "Лёгкий", emoji: "🟢", size: 6, winScore: 300,
+            rewards: [{min:500,coins:15},{min:300,coins:10},{min:200,coins:7},{min:150,coins:5},{min:100,coins:3},{min:50,coins:2},{min:0,coins:0}] },
+        normal: { label: "Средний", emoji: "🟡", size: 8, winScore: 500,
+            rewards: [{min:500,coins:40},{min:300,coins:25},{min:200,coins:17},{min:150,coins:11},{min:100,coins:7},{min:50,coins:4},{min:0,coins:1}] },
+        hard: { label: "Сложный", emoji: "🔴", size: 10, winScore: 700,
+            rewards: [{min:500,coins:75},{min:300,coins:50},{min:200,coins:35},{min:150,coins:22},{min:100,coins:14},{min:50,coins:8},{min:0,coins:3}] },
     };
 
     function bbCalcReward(levelKey, score) {
         const lvl = BB_LEVELS[levelKey];
         if (!lvl) return 0;
-        for (const r of lvl.rewards) {
-            if (score >= r.min) return r.coins;
-        }
+        for (const r of lvl.rewards) if (score >= r.min) return r.coins;
         return 0;
     }
 
     const BB_SHAPES_EASY = [
-        [[0,0]], [[0,0],[1,0]], [[0,0],[0,1]],
-        [[0,0],[1,0],[2,0]], [[0,0],[0,1],[0,2]],
-        [[0,0],[1,0],[0,1]], [[0,0],[0,1],[1,1]], [[0,0],[1,0],[1,1]],
+        [[0,0]],[[0,0],[1,0]],[[0,0],[0,1]],
+        [[0,0],[1,0],[2,0]],[[0,0],[0,1],[0,2]],
+        [[0,0],[1,0],[0,1]],[[0,0],[0,1],[1,1]],[[0,0],[1,0],[1,1]],
     ];
-    const BB_SHAPES_MEDIUM = [
-        ...BB_SHAPES_EASY,
-        [[0,0],[1,0],[2,0],[3,0]], [[0,0],[0,1],[0,2],[0,3]],
-        [[0,0],[1,0],[0,1],[1,1]], [[0,0],[1,0],[2,0],[0,1]],
-        [[0,0],[0,1],[0,2],[1,2]],
+    const BB_SHAPES_MEDIUM = [...BB_SHAPES_EASY,
+        [[0,0],[1,0],[2,0],[3,0]],[[0,0],[0,1],[0,2],[0,3]],
+        [[0,0],[1,0],[0,1],[1,1]],[[0,0],[1,0],[2,0],[0,1]],[[0,0],[0,1],[0,2],[1,2]],
     ];
-    const BB_SHAPES_HARD = [
-        ...BB_SHAPES_MEDIUM,
-        [[0,0],[1,0],[2,0],[3,0],[4,0]], [[0,0],[0,1],[0,2],[0,3],[0,4]],
-        [[0,0],[1,0],[2,0],[0,1],[1,1],[2,1]],
-        [[0,0],[1,0],[2,0],[3,0],[0,1]], [[0,0],[1,0],[2,0],[2,1],[2,2]],
+    const BB_SHAPES_HARD = [...BB_SHAPES_MEDIUM,
+        [[0,0],[1,0],[2,0],[3,0],[4,0]],[[0,0],[0,1],[0,2],[0,3],[0,4]],
+        [[0,0],[1,0],[2,0],[0,1],[1,1],[2,1]],[[0,0],[1,0],[2,0],[3,0],[0,1]],[[0,0],[1,0],[2,0],[2,1],[2,2]],
     ];
 
     function bbGetShapePool(levelKey, score) {
@@ -124,14 +86,12 @@
 
     const BB_COLORS = ["#ff6b6b","#feca57","#48dbfb","#1dd1a1","#a29bfe","#fd79a8","#54a0ff","#26de81"];
 
-    // ---------- Еда ----------
-
     const FOOD_ITEMS = {
-        cola:     { name: "Кола",     emoji: "🥤", price: 3,  hunger: 7  },
-        kitkat:   { name: "Кит-Кат",  emoji: "🍫", price: 5,  hunger: 10 },
-        donut:    { name: "Пончик",   emoji: "🍩", price: 6,  hunger: 12 },
-        pizza:    { name: "Пицца",    emoji: "🍕", price: 7,  hunger: 14 },
-        shawarma: { name: "Шаурма",   emoji: "🌯", price: 15, hunger: 35 },
+        cola:     { name: "Кола",    emoji: "🥤", price: 3,  hunger: 7  },
+        kitkat:   { name: "Кит-Кат", emoji: "🍫", price: 5,  hunger: 10 },
+        donut:    { name: "Пончик",  emoji: "🍩", price: 6,  hunger: 12 },
+        pizza:    { name: "Пицца",   emoji: "🍕", price: 7,  hunger: 14 },
+        shawarma: { name: "Шаурма",  emoji: "🌯", price: 15, hunger: 35 },
     };
 
     const SHOP_ITEMS = {
@@ -204,9 +164,11 @@
     const shopEl = $("shop");
     const chooserEl = $("gameChooser");
     const bbLevelsEl = $("bbLevels");
+    const sudokuLevelsEl = $("sudokuLevels");
     const introEl = $("minigameIntro");
     const minigameEl = $("minigame");
     const bbEl = $("blockblast");
+    const sudokuEl = $("sudoku");
     const mgModalEl = $("mgResult");
     const bbModalEl = $("bbResult");
     const bbExitModalEl = $("bbExitModal");
@@ -240,9 +202,9 @@
 
     function hideAll() {
         if (typeof bbCleanupGhosts === "function") bbCleanupGhosts();
-        [onboardingEl, gameEl, shopEl, chooserEl, bbLevelsEl, introEl, minigameEl, bbEl,
-         sleepModalEl, mgModalEl, bbModalEl, bbExitModalEl, bbWinModalEl, feedModalEl,
-         adminPanelEl, leaderboardEl]
+        [onboardingEl, gameEl, shopEl, chooserEl, bbLevelsEl, sudokuLevelsEl, introEl, minigameEl,
+         bbEl, sudokuEl, sleepModalEl, mgModalEl, bbModalEl, bbExitModalEl, bbWinModalEl,
+         feedModalEl, adminPanelEl, leaderboardEl]
             .forEach(el => el && el.classList.add("hidden"));
     }
 
@@ -310,16 +272,10 @@
             if (!name) return;
             if (isOnline()) {
                 try {
-                    await apiFetch("/api/pet/name", {
-                        method: "POST",
-                        body: JSON.stringify({ name }),
-                    });
+                    await apiFetch("/api/pet/name", { method: "POST", body: JSON.stringify({ name }) });
                 } catch (e) {
-                    if (!e.message.includes("409")) {
-                        alert("Ошибка: " + e.message);
-                        return;
-                    }
-                    alert("Это имя уже занято. Придумай другое.");
+                    if (e.message.includes("409")) alert("Это имя уже занято другим питомцем. Придумай другое.");
+                    else alert("Не удалось сохранить имя. " + e.message);
                     return;
                 }
             }
@@ -328,14 +284,13 @@
             showGame();
         };
         nameConfirm.addEventListener("click", (e) => { e.preventDefault(); confirm(); });
-        nameInput.addEventListener("keydown", (e) => {
-            if (e.key === "Enter") { e.preventDefault(); confirm(); }
-        });
+        nameInput.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); confirm(); } });
     }
 
     function showGame() { hideAll(); gameEl.classList.remove("hidden"); render(); }
     function openGameChooser() { if (isSleeping()) return; hideAll(); chooserEl.classList.remove("hidden"); }
     function openBbLevels() { if (isSleeping()) return; hideAll(); bbLevelsEl.classList.remove("hidden"); }
+    function openSudokuLevels() { if (isSleeping()) return; hideAll(); sudokuLevelsEl.classList.remove("hidden"); }
 
     async function applyAction(name) {
         const action = ACTIONS[name];
@@ -344,25 +299,19 @@
             if (state.coins < action.cost) { alert(`Нужно ${action.cost} монет.`); return; }
             if (isOnline()) {
                 try {
-                    const res = await apiFetch("/api/coins/spend", {
-                        method: "POST",
-                        body: JSON.stringify({ amount: action.cost }),
-                    });
+                    const res = await apiFetch("/api/coins/spend", { method: "POST", body: JSON.stringify({ amount: action.cost }) });
                     state.coins = res.coins;
                 } catch (e) {
                     if (e.message === "OFFLINE") state.coins -= action.cost;
-                    else { alert("Сервер просыпается, попробуй ещё раз через пару секунд."); return; }
+                    else { alert("Ошибка: " + e.message); return; }
                 }
-            } else {
-                state.coins -= action.cost;
-            }
+            } else state.coins -= action.cost;
         }
         for (const [key, delta] of Object.entries(action)) {
             if (key === "cost") continue;
             state.stats[key] = Math.max(0, Math.min(100, state.stats[key] + delta));
         }
-        save();
-        render();
+        save(); render();
         if (tg) tg.HapticFeedback?.impactOccurred("light");
     }
 
@@ -389,20 +338,14 @@
         renderShop();
     });
     $("shopClose").addEventListener("click", () => showGame());
-
     document.querySelectorAll(".shop__tab[data-tab]").forEach(tab => {
-        tab.addEventListener("click", () => {
-            shopTab = tab.dataset.tab;
-            updateShopTabs();
-            renderShop();
-        });
+        tab.addEventListener("click", () => { shopTab = tab.dataset.tab; updateShopTabs(); renderShop(); });
     });
     function updateShopTabs() {
         document.querySelectorAll(".shop__tab[data-tab]").forEach(t => {
             t.classList.toggle("shop__tab--active", t.dataset.tab === shopTab);
         });
     }
-
     function renderShop() {
         const list = $("shopList");
         list.innerHTML = "";
@@ -410,11 +353,9 @@
         if (shopTab === "clothes") renderClothesTab(list);
         else if (shopTab === "food") renderFoodTab(list);
     }
-
     function renderClothesTab(list) {
         const owned = state.owned;
         const equipped = state.equipped;
-
         if (owned.length > 0) {
             const h = document.createElement("div");
             h.className = "shop-section";
@@ -474,7 +415,6 @@
             }
         }
     }
-
     function renderFoodTab(list) {
         const h = document.createElement("div");
         h.className = "shop-section";
@@ -500,17 +440,13 @@
             list.appendChild(row);
         }
     }
-
     async function buyFood(id) {
         const food = FOOD_ITEMS[id];
         if (!food) return;
         if (state.coins < food.price) { alert("Мало монет"); return; }
         if (isOnline()) {
             try {
-                const res = await apiFetch("/api/coins/spend", {
-                    method: "POST",
-                    body: JSON.stringify({ amount: food.price }),
-                });
+                const res = await apiFetch("/api/coins/spend", { method: "POST", body: JSON.stringify({ amount: food.price }) });
                 state.coins = res.coins;
             } catch (e) {
                 if (e.message === "OFFLINE") state.coins -= food.price;
@@ -521,7 +457,6 @@
         save(); renderShop();
         if (tg) tg.HapticFeedback?.notificationOccurred("success");
     }
-
     function buyItem(id) {
         const item = SHOP_ITEMS[id];
         if (!item) return;
@@ -535,22 +470,20 @@
             if (tg) tg.HapticFeedback?.notificationOccurred("success");
         };
         if (isOnline()) {
-            apiFetch("/api/shop/buy", {
-                method: "POST",
-                body: JSON.stringify({ item_id: id }),
-            }).then(res => {
-                state.coins = res.coins;
-                state.owned.push(id);
-                state.equipped = id;
-                save(); renderShop();
-                if (tg) tg.HapticFeedback?.notificationOccurred("success");
-            }).catch(e => {
-                if (e.message === "OFFLINE") doLocal();
-                else alert("Ошибка покупки: " + e.message);
-            });
+            apiFetch("/api/shop/buy", { method: "POST", body: JSON.stringify({ item_id: id }) })
+                .then(res => {
+                    state.coins = res.coins;
+                    state.owned.push(id);
+                    state.equipped = id;
+                    save(); renderShop();
+                    if (tg) tg.HapticFeedback?.notificationOccurred("success");
+                })
+                .catch(e => {
+                    if (e.message === "OFFLINE") doLocal();
+                    else alert("Ошибка покупки: " + e.message);
+                });
         } else doLocal();
     }
-
     async function equipItem(id) {
         if (!state.owned.includes(id)) return;
         state.equipped = id;
@@ -558,11 +491,8 @@
         if (tg) tg.HapticFeedback?.impactOccurred("light");
         if (isOnline()) {
             try {
-                await apiFetch("/api/inventory/equip", {
-                    method: "POST",
-                    body: JSON.stringify({ item_id: id }),
-                });
-            } catch (e) { console.warn("equip sync failed:", e); }
+                await apiFetch("/api/inventory/equip", { method: "POST", body: JSON.stringify({ item_id: id }) });
+            } catch (e) { console.warn(e); }
         }
     }
     async function unequipItem() {
@@ -571,11 +501,8 @@
         save(); renderShop();
         if (isOnline() && prev) {
             try {
-                await apiFetch("/api/inventory/equip", {
-                    method: "POST",
-                    body: JSON.stringify({ item_id: prev }),
-                });
-            } catch (e) { console.warn("unequip sync failed:", e); }
+                await apiFetch("/api/inventory/equip", { method: "POST", body: JSON.stringify({ item_id: prev }) });
+            } catch (e) { console.warn(e); }
         }
     }
 
@@ -690,20 +617,13 @@
         let reward = win ? MG_REWARD : 0;
         if (isOnline()) {
             try {
-                const res = await apiFetch("/api/game/reward", {
-                    method: "POST",
-                    body: JSON.stringify({ game: "clicker", score: mgScore }),
-                });
+                const res = await apiFetch("/api/game/reward", { method: "POST", body: JSON.stringify({ game: "clicker", score: mgScore }) });
                 state.coins = res.coins;
                 reward = res.reward;
             } catch (e) { if (e.message === "OFFLINE") state.coins += reward; }
-            // Сохраняем счёт кликера в лидерборд
             try {
-                await apiFetch("/api/clicker/score", {
-                    method: "POST",
-                    body: JSON.stringify({ score: mgScore, pet_name: state.petName || "Питомец" }),
-                });
-            } catch (e) { console.warn("clicker score save:", e); }
+                await apiFetch("/api/clicker/score", { method: "POST", body: JSON.stringify({ score: mgScore, pet_name: state.petName || "Питомец" }) });
+            } catch (e) { console.warn(e); }
         } else state.coins += reward;
         if (win) {
             mgModalTitle.textContent = "Ты выиграл:";
@@ -722,8 +642,7 @@
         mgModalRepeat.disabled = state.stats.energy < MG_ENERGY_COST;
         mgModalEl.classList.remove("hidden");
     }
-    
-        mgClickBtn.addEventListener("click", () => {
+    mgClickBtn.addEventListener("click", () => {
         if (!mgActive) return;
         mgScore += 1;
         mgScoreEl.textContent = mgScore;
@@ -806,7 +725,6 @@
         const modeEl = $("bbLevelIcon");
         if (modeEl) modeEl.textContent = bbInfiniteMode ? "♾" : BB_LEVELS[bbCurrentLevel].emoji;
     }
-
     function bbCanPlace(cells, ox, oy) {
         for (const [dx, dy] of cells) {
             const x = ox + dx, y = oy + dy;
@@ -922,8 +840,6 @@
         if (bbShapes.every(s => s === null)) bbShapes = [bbNewShape(), bbNewShape(), bbNewShape()];
         bbRender();
         if (tg) tg.HapticFeedback?.impactOccurred("light");
-
-        // Проверка победы
         const winScore = BB_LEVELS[bbCurrentLevel].winScore;
         if (!bbInfiniteMode && bbScore >= winScore && !bbFinished) {
             bbFinished = true;
@@ -931,7 +847,6 @@
             bbOnWin();
             return;
         }
-
         if (!bbAnyShapeFits()) bbGameOver();
     }
     function bbClearLines() {
@@ -957,17 +872,13 @@
         }
         return false;
     }
-
     async function bbFinishAndReward() {
         bbCleanupGhosts();
         bbActive = false;
         let coins = bbCalcReward(bbCurrentLevel, bbScore);
         if (isOnline()) {
             try {
-                const res = await apiFetch("/api/game/reward", {
-                    method: "POST",
-                    body: JSON.stringify({ game: "blockblast", score: bbScore }),
-                });
+                const res = await apiFetch("/api/game/reward", { method: "POST", body: JSON.stringify({ game: "blockblast", score: bbScore }) });
                 coins = res.reward;
                 state.coins = res.coins;
             } catch (e) { if (e.message === "OFFLINE") state.coins += coins; }
@@ -976,32 +887,19 @@
         save();
         return coins;
     }
-
     async function bbSubmitInfiniteScore() {
         if (!isOnline() || bbScore === 0) return;
         try {
-            await apiFetch("/api/blockblast/score", {
-                method: "POST",
-                body: JSON.stringify({
-                    level: bbCurrentLevel,
-                    score: bbScore,
-                    pet_name: state.petName || "Питомец",
-                }),
-            });
-        } catch (e) { console.warn("score save failed:", e); }
+            await apiFetch("/api/blockblast/score", { method: "POST", body: JSON.stringify({ level: bbCurrentLevel, score: bbScore, pet_name: state.petName || "Питомец" }) });
+        } catch (e) { console.warn(e); }
     }
-
     async function bbGameOver() {
         const coins = await bbFinishAndReward();
-        if (bbInfiniteMode) {
-            await bbSubmitInfiniteScore();
-            bbInfiniteMode = false;
-        }
+        if (bbInfiniteMode) { await bbSubmitInfiniteScore(); bbInfiniteMode = false; }
         $("bbResultReward").textContent = `+${coins} 💰`;
         $("bbResultSub").textContent = `Счёт: ${bbScore}`;
         bbModalEl.classList.remove("hidden");
     }
-
     async function bbOnWin() {
         const coins = await bbFinishAndReward();
         const winScore = BB_LEVELS[bbCurrentLevel].winScore;
@@ -1009,25 +907,14 @@
         $("bbWinSub").textContent = `Счёт: ${bbScore} (цель: ${winScore})`;
         bbWinModalEl.classList.remove("hidden");
     }
-
-    document.querySelectorAll(".level-btn").forEach(btn => {
+    document.querySelectorAll(".level-btn[data-level]").forEach(btn => {
         btn.addEventListener("click", () => startBlockBlast(btn.dataset.level, false));
     });
     $("bbLevelsCancel").addEventListener("click", () => openGameChooser());
-
-        // ---------- Обработчики выбора игры ----------
-
-    $("chooseClicker").addEventListener("click", () => openMinigameIntro());
-    $("chooseBlock").addEventListener("click", () => openBbLevels());
-    $("chooseCancel").addEventListener("click", () => showGame());
-
     function startBlockBlast(levelKey, infinite) {
         bbCleanupGhosts();
         if (isSleeping()) return;
-        if (state.stats.energy < BB_ENERGY_COST) {
-            alert(`Нужно ${BB_ENERGY_COST} энергии.`);
-            return;
-        }
+        if (state.stats.energy < BB_ENERGY_COST) { alert(`Нужно ${BB_ENERGY_COST} энергии.`); return; }
         state.stats.energy -= BB_ENERGY_COST;
         bbCurrentLevel = levelKey;
         bbInfiniteMode = !!infinite;
@@ -1037,7 +924,6 @@
         bbReset();
         bbRender();
     }
-
     $("bbCancel").addEventListener("click", () => {
         bbCleanupGhosts();
         if (!bbActive || bbScore === 0) { showGame(); return; }
@@ -1050,13 +936,9 @@
     $("bbExitYes").addEventListener("click", async () => {
         bbExitModalEl.classList.add("hidden");
         await bbFinishAndReward();
-        if (bbInfiniteMode) {
-            await bbSubmitInfiniteScore();
-            bbInfiniteMode = false;
-        }
+        if (bbInfiniteMode) { await bbSubmitInfiniteScore(); bbInfiniteMode = false; }
         showGame();
     });
-
     $("bbResultBack").addEventListener("click", () => showGame());
     $("bbResultRepeat").addEventListener("click", () => {
         if (state.stats.energy < BB_ENERGY_COST) { alert(`Нужно ${BB_ENERGY_COST} энергии.`); return; }
@@ -1067,11 +949,7 @@
         bbReset();
         bbRender();
     });
-
-    $("bbWinExit").addEventListener("click", () => {
-        bbWinModalEl.classList.add("hidden");
-        showGame();
-    });
+    $("bbWinExit").addEventListener("click", () => { bbWinModalEl.classList.add("hidden"); showGame(); });
     $("bbWinRepeat").addEventListener("click", () => {
         if (state.stats.energy < BB_ENERGY_COST) { alert(`Нужно ${BB_ENERGY_COST} энергии.`); return; }
         state.stats.energy -= BB_ENERGY_COST;
@@ -1091,6 +969,13 @@
         bbRender();
     });
 
+    // ---------- Обработчики выбора игры ----------
+
+    $("chooseClicker").addEventListener("click", () => openMinigameIntro());
+    $("chooseBlock").addEventListener("click", () => openBbLevels());
+    $("chooseSudoku").addEventListener("click", () => openSudokuLevels());
+    $("chooseCancel").addEventListener("click", () => showGame());
+
     // ---------- Таблица лидеров ----------
 
     let lbGame = "blockblast";
@@ -1105,22 +990,12 @@
         loadLeaderboard();
     });
     $("leaderboardClose").addEventListener("click", () => openGameChooser());
-
     document.querySelectorAll("[data-lgame]").forEach(t => {
-        t.addEventListener("click", () => {
-            lbGame = t.dataset.lgame;
-            updateLbTabs();
-            loadLeaderboard();
-        });
+        t.addEventListener("click", () => { lbGame = t.dataset.lgame; updateLbTabs(); loadLeaderboard(); });
     });
     document.querySelectorAll("[data-ltab]").forEach(t => {
-        t.addEventListener("click", () => {
-            lbLevel = t.dataset.ltab;
-            updateLbTabs();
-            loadLeaderboard();
-        });
+        t.addEventListener("click", () => { lbLevel = t.dataset.ltab; updateLbTabs(); loadLeaderboard(); });
     });
-
     function updateLbTabs() {
         document.querySelectorAll("[data-lgame]").forEach(t => {
             t.classList.toggle("shop__tab--active", t.dataset.lgame === lbGame);
@@ -1129,24 +1004,13 @@
             t.classList.toggle("shop__tab--active", t.dataset.ltab === lbLevel);
         });
         const levelTabs = $("lbLevelTabs");
-        if (levelTabs) {
-            levelTabs.style.display = (lbGame === "blockblast") ? "grid" : "none";
-        }
+        if (levelTabs) levelTabs.style.display = (lbGame === "blockblast") ? "grid" : "none";
     }
-
     async function loadLeaderboard() {
         const list = $("leaderboardList");
         list.innerHTML = '<div class="shop-empty">Загрузка…</div>';
-        if (!isOnline()) {
-            list.innerHTML = '<div class="shop-empty">Открой через Telegram</div>';
-            return;
-        }
-        let url;
-        if (lbGame === "blockblast") {
-            url = "/api/blockblast/leaderboard?level=" + lbLevel;
-        } else {
-            url = "/api/clicker/leaderboard";
-        }
+        if (!isOnline()) { list.innerHTML = '<div class="shop-empty">Открой через Telegram</div>'; return; }
+        let url = lbGame === "blockblast" ? "/api/blockblast/leaderboard?level=" + lbLevel : "/api/clicker/leaderboard";
         try {
             const data = await apiFetch(url);
             list.innerHTML = "";
@@ -1162,13 +1026,9 @@
                 if (e.rank === 2) row.classList.add("lb-item--top2");
                 if (e.rank === 3) row.classList.add("lb-item--top3");
                 const medal = e.rank === 1 ? "🥇" : e.rank === 2 ? "🥈" : e.rank === 3 ? "🥉" : e.rank;
-                row.innerHTML = `
-                    <div class="lb-item__rank">${medal}</div>
-                    <div class="lb-item__info">
-                        <div class="lb-item__name">${e.pet_name}${e.is_me ? ' <span class="lb-item__you">(ты)</span>' : ""}</div>
-                    </div>
-                    <div class="lb-item__score">${e.score}</div>
-                `;
+                row.innerHTML = `<div class="lb-item__rank">${medal}</div>
+                    <div class="lb-item__info"><div class="lb-item__name">${e.pet_name}${e.is_me ? ' <span class="lb-item__you">(ты)</span>' : ""}</div></div>
+                    <div class="lb-item__score">${e.score}</div>`;
                 list.appendChild(row);
             }
             if (data.my_entry) {
@@ -1177,13 +1037,9 @@
                 list.appendChild(sep);
                 const row = document.createElement("div");
                 row.className = "lb-item lb-item--me";
-                row.innerHTML = `
-                    <div class="lb-item__rank">${data.my_entry.rank}</div>
-                    <div class="lb-item__info">
-                        <div class="lb-item__name">${data.my_entry.pet_name} <span class="lb-item__you">(ты)</span></div>
-                    </div>
-                    <div class="lb-item__score">${data.my_entry.score}</div>
-                `;
+                row.innerHTML = `<div class="lb-item__rank">${data.my_entry.rank}</div>
+                    <div class="lb-item__info"><div class="lb-item__name">${data.my_entry.pet_name} <span class="lb-item__you">(ты)</span></div></div>
+                    <div class="lb-item__score">${data.my_entry.score}</div>`;
                 list.appendChild(row);
             }
         } catch (e) {
@@ -1211,11 +1067,7 @@
             await fetch("https://tamagotchi.layero.app/api/sleep/schedule", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    user_id: userId,
-                    pet_name: state.petName || "Питомец",
-                    duration_seconds: Math.round(durationMs / 1000),
-                }),
+                body: JSON.stringify({ user_id: userId, pet_name: state.petName || "Питомец", duration_seconds: Math.round(durationMs / 1000) }),
             });
         } catch (e) { console.warn(e); }
     }
@@ -1250,7 +1102,7 @@
     $("sleepDeep").addEventListener("click", () => startSleep(SLEEP_DEEP_MS, SLEEP_DEEP_GAIN));
     $("sleepCancel").addEventListener("click", () => sleepModalEl.classList.add("hidden"));
 
-    // ---------- Админ-панель ----------
+    // ---------- Админка ----------
 
     let adminTab = "items";
 
@@ -1313,122 +1165,82 @@
                 const btn = document.createElement("button");
                 btn.className = "shop-item__btn shop-item__btn--equip";
                 btn.textContent = "+10";
-                btn.addEventListener("click", () => {
-                    state.food[id] = (state.food[id] || 0) + 10;
-                    save(); renderAdmin();
-                });
+                btn.addEventListener("click", () => { state.food[id] = (state.food[id] || 0) + 10; save(); renderAdmin(); });
                 row.appendChild(preview); row.appendChild(info); row.appendChild(btn);
                 list.appendChild(row);
             }
         } else if (adminTab === "tools") {
-            // ── Монеты ──
             const coinsRow = document.createElement("div");
             coinsRow.className = "shop-item";
             coinsRow.innerHTML = `<div class="shop-item__preview">💰</div>
-                <div class="shop-item__info">
-                    <div class="shop-item__name">Монеты</div>
-                    <div class="shop-item__price">сейчас: ${state.coins}</div>
-                </div>`;
-            const coinsBtns = document.createElement("div");
-            coinsBtns.style.display = "flex";
-            coinsBtns.style.gap = "6px";
-            const coinsMinus = document.createElement("button");
-            coinsMinus.className = "shop-item__btn shop-item__btn--unequip";
-            coinsMinus.textContent = "−100";
-            coinsMinus.addEventListener("click", () => {
-                state.coins = Math.max(0, state.coins - 100);
-                save(); renderAdmin(); render();
-            });
-            const coinsPlus = document.createElement("button");
-            coinsPlus.className = "shop-item__btn shop-item__btn--equip";
-            coinsPlus.textContent = "+100";
-            coinsPlus.addEventListener("click", () => {
-                state.coins += 100;
-                save(); renderAdmin(); render();
-            });
-            coinsBtns.appendChild(coinsMinus);
-            coinsBtns.appendChild(coinsPlus);
-            coinsRow.appendChild(coinsBtns);
+                <div class="shop-item__info"><div class="shop-item__name">Монеты</div>
+                <div class="shop-item__price">сейчас: ${state.coins}</div></div>`;
+            const btns = document.createElement("div");
+            btns.style.display = "flex"; btns.style.gap = "6px";
+            const minus = document.createElement("button");
+            minus.className = "shop-item__btn shop-item__btn--unequip";
+            minus.textContent = "−100";
+            minus.addEventListener("click", () => { state.coins = Math.max(0, state.coins - 100); save(); renderAdmin(); render(); });
+            const plus = document.createElement("button");
+            plus.className = "shop-item__btn shop-item__btn--equip";
+            plus.textContent = "+100";
+            plus.addEventListener("click", () => { state.coins += 100; save(); renderAdmin(); render(); });
+            btns.appendChild(minus); btns.appendChild(plus);
+            coinsRow.appendChild(btns);
             list.appendChild(coinsRow);
 
-            // ── Статы ──
-            const statsHeader = document.createElement("div");
-            statsHeader.className = "shop-section";
-            statsHeader.textContent = "Статы";
-            list.appendChild(statsHeader);
+            const sh = document.createElement("div");
+            sh.className = "shop-section";
+            sh.textContent = "Статы";
+            list.appendChild(sh);
 
             const STAT_KEYS = [
-                { key: "hunger",      emoji: "🍖", name: "Голод" },
-                { key: "happiness",   emoji: "😊", name: "Радость" },
-                { key: "energy",      emoji: "⚡", name: "Энергия" },
+                { key: "hunger", emoji: "🍖", name: "Голод" },
+                { key: "happiness", emoji: "😊", name: "Радость" },
+                { key: "energy", emoji: "⚡", name: "Энергия" },
                 { key: "cleanliness", emoji: "🧼", name: "Чистота" },
             ];
-
             for (const s of STAT_KEYS) {
                 const row = document.createElement("div");
                 row.className = "shop-item";
                 const val = Math.round(state.stats[s.key]);
                 row.innerHTML = `<div class="shop-item__preview">${s.emoji}</div>
-                    <div class="shop-item__info">
-                        <div class="shop-item__name">${s.name}</div>
-                        <div class="shop-item__price">сейчас: ${val}</div>
-                    </div>`;
-                const btns = document.createElement("div");
-                btns.style.display = "flex";
-                btns.style.gap = "6px";
-
-                const minus = document.createElement("button");
-                minus.className = "shop-item__btn shop-item__btn--unequip";
-                minus.textContent = "−10";
-                minus.addEventListener("click", () => {
-                    state.stats[s.key] = Math.max(0, state.stats[s.key] - 10);
-                    save(); renderAdmin(); render();
-                });
-
-                const reset = document.createElement("button");
-                reset.className = "shop-item__btn";
-                reset.textContent = "MAX";
-                reset.addEventListener("click", () => {
-                    state.stats[s.key] = 100;
-                    save(); renderAdmin(); render();
-                });
-
-                const plus = document.createElement("button");
-                plus.className = "shop-item__btn shop-item__btn--equip";
-                plus.textContent = "+10";
-                plus.addEventListener("click", () => {
-                    state.stats[s.key] = Math.min(100, state.stats[s.key] + 10);
-                    save(); renderAdmin(); render();
-                });
-
-                btns.appendChild(minus);
-                btns.appendChild(reset);
-                btns.appendChild(plus);
-                row.appendChild(btns);
+                    <div class="shop-item__info"><div class="shop-item__name">${s.name}</div>
+                    <div class="shop-item__price">сейчас: ${val}</div></div>`;
+                const b = document.createElement("div");
+                b.style.display = "flex"; b.style.gap = "6px";
+                const m = document.createElement("button");
+                m.className = "shop-item__btn shop-item__btn--unequip";
+                m.textContent = "−10";
+                m.addEventListener("click", () => { state.stats[s.key] = Math.max(0, state.stats[s.key] - 10); save(); renderAdmin(); render(); });
+                const r = document.createElement("button");
+                r.className = "shop-item__btn";
+                r.textContent = "MAX";
+                r.addEventListener("click", () => { state.stats[s.key] = 100; save(); renderAdmin(); render(); });
+                const p = document.createElement("button");
+                p.className = "shop-item__btn shop-item__btn--equip";
+                p.textContent = "+10";
+                p.addEventListener("click", () => { state.stats[s.key] = Math.min(100, state.stats[s.key] + 10); save(); renderAdmin(); render(); });
+                b.appendChild(m); b.appendChild(r); b.appendChild(p);
+                row.appendChild(b);
                 list.appendChild(row);
             }
 
-            // ── Полный сброс ──
-            const nukeHeader = document.createElement("div");
-            nukeHeader.className = "shop-section";
-            nukeHeader.textContent = "Сброс";
-            list.appendChild(nukeHeader);
+            const sh2 = document.createElement("div");
+            sh2.className = "shop-section";
+            sh2.textContent = "Сброс";
+            list.appendChild(sh2);
 
             const nukeRow = document.createElement("div");
             nukeRow.className = "shop-item";
             nukeRow.innerHTML = `<div class="shop-item__preview">💥</div>
-                <div class="shop-item__info">
-                    <div class="shop-item__name">Полный сброс</div>
-                    <div class="shop-item__price">Стереть всё локально</div>
-                </div>`;
+                <div class="shop-item__info"><div class="shop-item__name">Полный сброс</div>
+                <div class="shop-item__price">Стереть всё локально</div></div>`;
             const nukeBtn = document.createElement("button");
             nukeBtn.className = "shop-item__btn shop-item__btn--unequip";
             nukeBtn.textContent = "Стереть";
             nukeBtn.addEventListener("click", () => {
-                if (confirm("Точно стереть всё?")) {
-                    localStorage.removeItem(STORAGE_KEY);
-                    location.reload();
-                }
+                if (confirm("Точно стереть всё?")) { localStorage.removeItem(STORAGE_KEY); location.reload(); }
             });
             nukeRow.appendChild(nukeBtn);
             list.appendChild(nukeRow);
@@ -1452,44 +1264,41 @@
 
     async function syncFromServer() {
         if (!isOnline()) return;
-
-        try {
-            const me = await apiFetch("/api/me");
-            state.coins = me.coins;
-        } catch (e) { console.warn("me:", e); }
-
+        try { const me = await apiFetch("/api/me"); state.coins = me.coins; } catch (e) { console.warn(e); }
         try {
             const data = await apiFetch("/api/inventory/granted");
             for (const it of data.items) {
                 if (!state.owned.includes(it.item_id)) state.owned.push(it.item_id);
                 if (it.equipped && !state.equipped) state.equipped = it.item_id;
             }
-        } catch (e) { console.warn("inv:", e); }
-
-        // Определяем имя с сервера
+        } catch (e) { console.warn(e); }
         let serverName = null;
-        try {
-            const pet = await apiFetch("/api/pet");
-            if (pet.name) serverName = pet.name;
-        } catch (e) { console.warn("pet:", e); }
-
+        try { const pet = await apiFetch("/api/pet"); if (pet.name) serverName = pet.name; } catch (e) { console.warn(e); }
         if (serverName && serverName.toLowerCase() !== "питомец") {
-            // Имя на сервере есть — берём его
             state.petName = serverName;
         } else {
-            // На сервере дефолт — считаем что имени нет
             state.petName = null;
         }
-
         save();
-
-        // Переключаем экран в зависимости от того, есть ли имя
-        if (!state.petName) {
-            showOnboarding();
-        } else {
-            showGame();
-        }
+        if (!state.petName) showOnboarding();
+        else showGame();
     }
+
+    // ---------- Экспорт для sudoku.js ----------
+
+    window.App = {
+        apiFetch: (path, opts) => apiFetch(path, opts),
+        isOnline: () => isOnline(),
+        getState: () => state,
+        save: () => save(),
+        render: () => render(),
+        hideAll: () => hideAll(),
+        showGame: () => showGame(),
+        openGameChooser: () => openGameChooser(),
+        showHaptic: (type) => { if (tg) tg.HapticFeedback?.impactOccurred(type || "light"); },
+        showNotification: (type) => { if (tg) tg.HapticFeedback?.notificationOccurred(type || "success"); },
+        notify: (msg) => alert(msg),
+    };
 
     // ---------- Старт ----------
 
@@ -1499,14 +1308,15 @@
     save();
 
     if (isOnline()) {
-        // Пока грузим с сервера — покажем заглушку
         document.body.style.opacity = "0.5";
-        syncFromServer().finally(() => {
-            document.body.style.opacity = "1";
-        });
+        syncFromServer().finally(() => { document.body.style.opacity = "1"; });
     } else {
-        // Оффлайн режим — по локальному имени
         if (!state.petName) showOnboarding();
         else showGame();
+    }
+
+    // Инициализируем Судоку, если модуль загружен
+    if (window.Sudoku && typeof window.Sudoku.init === "function") {
+        window.Sudoku.init();
     }
 })();

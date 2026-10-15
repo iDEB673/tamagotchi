@@ -122,6 +122,15 @@ async def game_reward(
             reward = 5
         else:
             reward = 2
+    elif payload.game == "sudoku":
+        if payload.score == 1:
+            reward = 10
+        elif payload.score == 2:
+            reward = 25
+        elif payload.score == 3:
+            reward = 50
+        else:
+            reward = 0
     else:
         raise HTTPException(400, f"Unknown game: {payload.game}")
 
