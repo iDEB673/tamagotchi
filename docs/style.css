@@ -481,3 +481,34 @@ body {
     background: var(--accent);
     color: #fff;
 }
+
+/* ---------- Судоку: подсветка и режимы ---------- */
+
+.sd-cell--crosshair {
+    background: #2a3a4a;
+}
+
+.sd-cell--same-num {
+    background: #4a4a2a !important;
+    color: #f0b232;
+    font-weight: 800;
+}
+
+.sd-cell--same-num.sd-cell--fixed {
+    background: #4a4a2a !important;
+}
+
+.sd-num--active {
+    background: var(--accent) !important;
+    color: #fff !important;
+    border-color: var(--accent);
+}
+
+.sd-num--done {
+    opacity: 0.25;
+    cursor: not-allowed;
+}
+
+.sd-actions {
+    grid-template-columns: repeat(5, 1fr);
+}
