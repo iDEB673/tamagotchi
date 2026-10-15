@@ -64,6 +64,16 @@ async def set_pet_name(
     if not name:
         raise HTTPException(status_code=400, detail="Name is empty")
 
+    # Проверка уникальности имени питомца
+    existing = await session.execute(
+        select(Pet).where(Pet.name == name, Pet.user_id != user.id)
+    )
+    if existing.scalar_one_or_none():
+        raise HTTPException(
+            status_code=409,
+            detail="Это имя уже занято другим питомцем. Придумай другое.",
+        )
+
     result = await session.execute(select(Pet).where(Pet.user_id == user.id))
     pet = result.scalar_one_or_none()
     if pet is None:
@@ -73,7 +83,6 @@ async def set_pet_name(
     await session.commit()
     await session.refresh(pet)
     return pet_logic.pet_to_dict(pet)
-
 
 @router.post("/coins/spend")
 async def spend_coins(
