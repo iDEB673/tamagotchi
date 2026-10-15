@@ -57,6 +57,16 @@
 
     function sdCountSolutions(grid, limit) {
         let count = 0;
+        function isValidPlace(g, r, c, v) {
+            for (let i = 0; i < 9; i++) {
+                if (g[r][i] === v || g[i][c] === v) return false;
+            }
+            const br = Math.floor(r / 3) * 3, bc = Math.floor(c / 3) * 3;
+            for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) {
+                if (g[br + i][bc + j] === v) return false;
+            }
+            return true;
+        }
         function solve(g) {
             for (let r = 0; r < 9; r++) {
                 for (let c = 0; c < 9; c++) {
@@ -74,16 +84,6 @@
                 }
             }
             count++;
-        }
-        function isValidPlace(g, r, c, v) {
-            for (let i = 0; i < 9; i++) {
-                if (g[r][i] === v || g[i][c] === v) return false;
-            }
-            const br = Math.floor(r / 3) * 3, bc = Math.floor(c / 3) * 3;
-            for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) {
-                if (g[br + i][bc + j] === v) return false;
-            }
-            return true;
         }
         solve(grid.map(r => r.slice()));
         return count;
@@ -117,11 +117,12 @@
     // ---------- Уровни ----------
 
     const SD_LEVELS = {
-        easy:   { emoji: "🟢", keep: 40, maxMistakes: 5, reward: 10 },
-        normal: { emoji: "🟡", keep: 32, maxMistakes: 3, reward: 25 },
-        hard:   { emoji: "🔴", keep: 26, maxMistakes: 3, reward: 50 },
+        easy:   { emoji: "🟢", keep: 40, maxMistakes: 5, reward: 10, code: 1 },
+        normal: { emoji: "🟡", keep: 32, maxMistakes: 3, reward: 25, code: 2 },
+        hard:   { emoji: "🔴", keep: 26, maxMistakes: 3, reward: 50, code: 3 },
     };
     const SD_ENERGY_COST = 15;
+    const SD_HINT_COST = 20;
 
     // ---------- Состояние ----------
 
@@ -136,11 +137,23 @@
     let sdNotesMode = false;
     let sdHistory = [];
     let sdActive = false;
-    let sdHintCost = 20;
 
     const $ = (id) => document.getElementById(id);
 
     // ---------- Рендер ----------
+
+    function sdIsConflict(r, c, v) {
+        for (let i = 0; i < 9; i++) {
+            if (i !== c && sdUserGrid[r][i] === v) return true;
+            if (i !== r && sdUserGrid[i][c] === v) return true;
+        }
+        const br = Math.floor(r / 3) * 3, bc = Math.floor(c / 3) * 3;
+        for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) {
+            const rr = br + i, cc = bc + j;
+            if ((rr !== r || cc !== c) && sdUserGrid[rr][cc] === v) return true;
+        }
+        return false;
+    }
 
     function sdRender() {
         const gridEl = $("sdGrid");
@@ -200,19 +213,6 @@
         $("sdLevel").textContent = SD_LEVELS[sdCurrentLevel].emoji;
     }
 
-    function sdIsConflict(r, c, v) {
-        for (let i = 0; i < 9; i++) {
-            if (i !== c && sdUserGrid[r][i] === v) return true;
-            if (i !== r && sdUserGrid[i][c] === v) return true;
-        }
-        const br = Math.floor(r / 3) * 3, bc = Math.floor(c / 3) * 3;
-        for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) {
-            const rr = br + i, cc = bc + j;
-            if ((rr !== r || cc !== c) && sdUserGrid[rr][cc] === v) return true;
-        }
-        return false;
-    }
-
     // ---------- NumPad ----------
 
     function sdBuildNumpad() {
@@ -255,16 +255,18 @@
             if (sdIsConflict(r, c, n)) {
                 sdMistakes++;
                 if (sdMistakes >= SD_LEVELS[sdCurrentLevel].maxMistakes) {
+                    sdRender();
                     sdLose();
                     return;
                 }
             } else if (sdIsSolved()) {
+                sdRender();
                 sdWin();
                 return;
             }
         }
 
-        App.showHaptic("light");
+        App.hapticImpact("light");
         sdRender();
     }
 
@@ -275,16 +277,16 @@
         return true;
     }
 
-    // ---------- Настройка партии ----------
+    // ---------- Партия ----------
 
     async function sdStart(levelKey) {
         if (!App) return;
-        if (App.getState().sleepUntil && Date.now() < App.getState().sleepUntil) return;
-        if (App.getState().stats.energy < SD_ENERGY_COST) {
+        const state = App.getState();
+        if (state.sleepUntil && Date.now() < state.sleepUntil) return;
+        if (state.stats.energy < SD_ENERGY_COST) {
             App.notify(`Нужно ${SD_ENERGY_COST} энергии.`);
             return;
         }
-        const state = App.getState();
         state.stats.energy -= SD_ENERGY_COST;
         App.save();
 
@@ -309,29 +311,30 @@
 
     function sdWin() {
         sdActive = false;
-        const reward = SD_LEVELS[sdCurrentLevel].reward;
+        const cfg = SD_LEVELS[sdCurrentLevel];
+        const reward = cfg.reward;
         const state = App.getState();
         state.coins += reward;
         App.save();
-        App.showNotification("success");
+        App.hapticNotify("success");
 
         if (App.isOnline()) {
             App.apiFetch("/api/game/reward", {
                 method: "POST",
-                body: JSON.stringify({ game: "sudoku", score: SD_LEVELS[sdCurrentLevel].reward === 10 ? 1 : SD_LEVELS[sdCurrentLevel].reward === 25 ? 2 : 3 }),
+                body: JSON.stringify({ game: "sudoku", score: cfg.code }),
             }).then(res => { state.coins = res.coins; App.save(); }).catch(() => {});
         }
 
         $("sdModalTitle").textContent = "🎉 Решено!";
         $("sdModalReward").textContent = `+${reward} 💰`;
         $("sdModalReward").classList.remove("loss");
-        $("sdModalSub").textContent = `Уровень: ${sdCurrentLevel} · ошибок: ${sdMistakes}`;
+        $("sdModalSub").textContent = `Ошибок: ${sdMistakes}`;
         $("sdModal").classList.remove("hidden");
     }
 
     function sdLose() {
         sdActive = false;
-        App.showNotification("error");
+        App.hapticNotify("error");
         $("sdModalTitle").textContent = "😔 Проигрыш";
         $("sdModalReward").textContent = `Ошибок: ${sdMistakes}`;
         $("sdModalReward").classList.add("loss");
@@ -342,7 +345,17 @@
     // ---------- Кнопки ----------
 
     function sdBindUI() {
+        // Открыть экран выбора сложности
+        $("chooseSudoku").addEventListener("click", () => {
+            if (!App) return;
+            const state = App.getState();
+            if (state.sleepUntil && Date.now() < state.sleepUntil) return;
+            App.hideAll();
+            $("sudokuLevels").classList.remove("hidden");
+        });
+
         $("sudokuLevelsCancel").addEventListener("click", () => App.openGameChooser());
+
         document.querySelectorAll(".level-btn[data-slevel]").forEach(btn => {
             btn.addEventListener("click", () => sdStart(btn.dataset.slevel));
         });
@@ -361,23 +374,22 @@
             sdUserGrid[last.r][last.c] = last.prev;
             sdNotes[last.r][last.c] = last.prevNotes;
             sdRender();
-            App.showHaptic("light");
+            App.hapticImpact("light");
         });
 
         $("sdNotes").addEventListener("click", () => {
             sdNotesMode = !sdNotesMode;
             $("sdNotes").classList.toggle("sd-action--active", sdNotesMode);
-            App.showHaptic("light");
+            App.hapticImpact("light");
         });
 
         $("sdHint").addEventListener("click", async () => {
             if (!sdActive) return;
             const state = App.getState();
-            if (state.coins < sdHintCost) {
-                App.notify(`Подсказка стоит ${sdHintCost} 💰`);
+            if (state.coins < SD_HINT_COST) {
+                App.notify(`Подсказка стоит ${SD_HINT_COST} 💰`);
                 return;
             }
-            // Ищем случайную пустую клетку
             const empties = [];
             for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) {
                 if (sdUserGrid[r][c] !== sdSolved[r][c]) empties.push({ r, c });
@@ -389,23 +401,23 @@
                 try {
                     const res = await App.apiFetch("/api/coins/spend", {
                         method: "POST",
-                        body: JSON.stringify({ amount: sdHintCost }),
+                        body: JSON.stringify({ amount: SD_HINT_COST }),
                     });
                     state.coins = res.coins;
                 } catch (e) {
                     if (e.message !== "OFFLINE") { App.notify("Ошибка: " + e.message); return; }
-                    state.coins -= sdHintCost;
+                    state.coins -= SD_HINT_COST;
                 }
-            } else state.coins -= sdHintCost;
+            } else state.coins -= SD_HINT_COST;
 
             sdHistory.push({ r: pick.r, c: pick.c, prev: sdUserGrid[pick.r][pick.c], prevNotes: new Set(sdNotes[pick.r][pick.c]) });
             sdUserGrid[pick.r][pick.c] = sdSolved[pick.r][pick.c];
             sdNotes[pick.r][pick.c].clear();
             App.save();
 
-            if (sdIsSolved()) { sdWin(); return; }
+            if (sdIsSolved()) { sdRender(); sdWin(); return; }
             sdRender();
-            App.showHaptic("light");
+            App.hapticImpact("light");
         });
 
         $("sdModalBack").addEventListener("click", () => {
@@ -428,7 +440,6 @@
 
     window.Sudoku = { init };
 
-    // Самоинициализация после загрузки
     if (document.readyState === "loading") {
         document.addEventListener("DOMContentLoaded", init);
     } else {
