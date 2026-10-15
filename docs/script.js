@@ -322,8 +322,9 @@
             petHatEl.dataset.item = "";
         }
 
+        // ОТЛАДКА: кнопка видна всем, чтобы понять что происходит
         if (adminBtn) {
-            adminBtn.classList.toggle("hidden", !isAdmin());
+            adminBtn.classList.remove("hidden");
         }
 
         actionButtons.forEach((btn) => { btn.disabled = sleeping; });

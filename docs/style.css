@@ -248,3 +248,23 @@ body {
     font-size: 14px; font-weight: 700; color: #5288c1;
     background: #e3ecf5; padding: 4px 10px; border-radius: 8px;
 }
+
+.header__right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.header__admin {
+    background: transparent;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 8px;
+    transition: background 0.15s;
+}
+
+.header__admin:active {
+    background: var(--bg-card);
+}
