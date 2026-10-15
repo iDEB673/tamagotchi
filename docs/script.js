@@ -351,7 +351,7 @@
                     state.coins = res.coins;
                 } catch (e) {
                     if (e.message === "OFFLINE") state.coins -= action.cost;
-                    else { alert("Ошибка: " + e.message); return; }
+                    else { alert("Сервер просыпается, попробуй ещё раз через пару секунд."); return; }
                 }
             } else {
                 state.coins -= action.cost;
@@ -551,15 +551,32 @@
         } else doLocal();
     }
 
-    function equipItem(id) {
+    async function equipItem(id) {
         if (!state.owned.includes(id)) return;
         state.equipped = id;
         save(); renderShop();
         if (tg) tg.HapticFeedback?.impactOccurred("light");
+        if (isOnline()) {
+            try {
+                await apiFetch("/api/inventory/equip", {
+                    method: "POST",
+                    body: JSON.stringify({ item_id: id }),
+                });
+            } catch (e) { console.warn("equip sync failed:", e); }
+        }
     }
-    function unequipItem() {
+    async function unequipItem() {
+        const prev = state.equipped;
         state.equipped = null;
         save(); renderShop();
+        if (isOnline() && prev) {
+            try {
+                await apiFetch("/api/inventory/equip", {
+                    method: "POST",
+                    body: JSON.stringify({ item_id: prev }),
+                });
+            } catch (e) { console.warn("unequip sync failed:", e); }
+        }
     }
 
     // ---------- Кормление ----------

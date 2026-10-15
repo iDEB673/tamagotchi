@@ -16,8 +16,8 @@ SHOP_ITEMS = {
     "wizard_hat": {
         "name": "Шапка волшебника",
         "emoji": "🧙",
-        "price": 0,           # не продаётся, только выдаётся
-        "special": True,      # не показывается в магазине
+        "price": 0,
+        "special": True,
     },
     "crown": {
         "name": "Корона",
@@ -41,6 +41,12 @@ SHOP_ITEMS = {
         "name": "Бантик",
         "emoji": "🎀",
         "price": 40,
+        "special": False,
+    },
+    "mask": {
+        "name": "Маска анонимуса",
+        "emoji": "🎭",
+        "price": 150,
         "special": False,
     },
 }
@@ -79,7 +85,6 @@ async def get_granted_items(
             for it in items
         ]
     }
-
 
 @router.get("/inventory")
 async def get_inventory(

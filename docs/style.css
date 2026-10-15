@@ -64,7 +64,16 @@ body {
 .pet { flex: 1; display: flex; justify-content: center; align-items: center; min-height: 0; }
 .pet__stack { position: relative; width: 70%; max-width: 320px; aspect-ratio: 1 / 1; display: flex; justify-content: center; align-items: center; max-height: 100%; }
 .pet__sprite { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; pointer-events: none; animation: bob 3s ease-in-out infinite; }
-.pet__hat { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; pointer-events: none; }
+.pet__hat {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    image-rendering: pixelated;
+    pointer-events: none;
+    animation: bob 3s ease-in-out infinite;
+}
 
 .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding-bottom: env(safe-area-inset-bottom, 0); }
 .action {
