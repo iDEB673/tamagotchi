@@ -48,10 +48,14 @@ async def get_current_user(
         session.add(user)
         await session.flush()
 
+    # Гарантируем наличие питомца
+    pet_result = await session.execute(select(Pet).where(Pet.user_id == tg_id))
+    pet = pet_result.scalar_one_or_none()
+    if pet is None:
         pet = Pet(user_id=tg_id, name="Питомец")
         session.add(pet)
 
-        await session.commit()
-        await session.refresh(user)
+    await session.commit()
+    await session.refresh(user)
 
     return user
