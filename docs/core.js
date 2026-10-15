@@ -278,6 +278,9 @@
         });
     });
 
+        // Выход из меню выбора игр
+    $("chooseCancel").addEventListener("click", () => showGame());
+
     // ---------- Магазин ----------
 
     let shopTab = "clothes";
