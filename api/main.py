@@ -13,7 +13,13 @@ from core.config import settings
 logger = logging.getLogger("wake")
 logging.basicConfig(level=logging.INFO)
 
-app = FastAPI(title="Tamagotchi API", version="0.2.0")
+app = FastAPI(
+    title="Tamagotchi API",
+    version="0.2.0",
+    docs_url="/api/docs",
+    redoc_url=None,
+    openapi_url="/api/openapi.json",
+)
 
 app.add_middleware(
     CORSMiddleware,
