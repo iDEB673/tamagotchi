@@ -1315,8 +1315,4 @@
         else showGame();
     }
 
-    // Инициализируем Судоку, если модуль загружен
-    if (window.Sudoku && typeof window.Sudoku.init === "function") {
-        window.Sudoku.init();
-    }
 })();
