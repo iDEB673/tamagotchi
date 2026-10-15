@@ -63,6 +63,8 @@ async def set_pet_name(
     name = payload.name.strip()[:20]
     if not name:
         raise HTTPException(status_code=400, detail="Name is empty")
+    if name.lower() == "питомец":
+        raise HTTPException(status_code=400, detail="Это имя зарезервировано")
 
     existing = await session.execute(
         select(Pet).where(Pet.name == name, Pet.user_id != user.id)

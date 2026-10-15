@@ -1376,10 +1376,12 @@
 
     async function syncFromServer() {
         if (!isOnline()) return;
+
         try {
             const me = await apiFetch("/api/me");
             state.coins = me.coins;
         } catch (e) { console.warn("me:", e); }
+
         try {
             const data = await apiFetch("/api/inventory/granted");
             for (const it of data.items) {
@@ -1387,17 +1389,48 @@
                 if (it.equipped && !state.equipped) state.equipped = it.item_id;
             }
         } catch (e) { console.warn("inv:", e); }
+
+        // Определяем имя с сервера
+        let serverName = null;
+        try {
+            const pet = await apiFetch("/api/pet");
+            if (pet.name) serverName = pet.name;
+        } catch (e) { console.warn("pet:", e); }
+
+        if (serverName && serverName.toLowerCase() !== "питомец") {
+            // Имя на сервере есть — берём его
+            state.petName = serverName;
+        } else {
+            // На сервере дефолт — считаем что имени нет
+            state.petName = null;
+        }
+
         save();
-        render();
+
+        // Переключаем экран в зависимости от того, есть ли имя
+        if (!state.petName) {
+            showOnboarding();
+        } else {
+            showGame();
+        }
     }
 
     // ---------- Старт ----------
 
     applyDecay();
     checkSleepOnLoad();
-    if (!state.petName) showOnboarding();
-    else showGame();
     if (isSleeping()) startSleepTicker();
     save();
-    syncFromServer();
+
+    if (isOnline()) {
+        // Пока грузим с сервера — покажем заглушку
+        document.body.style.opacity = "0.5";
+        syncFromServer().finally(() => {
+            document.body.style.opacity = "1";
+        });
+    } else {
+        // Оффлайн режим — по локальному имени
+        if (!state.petName) showOnboarding();
+        else showGame();
+    }
 })();
