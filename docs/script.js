@@ -322,9 +322,8 @@
             petHatEl.dataset.item = "";
         }
 
-        // ОТЛАДКА: кнопка видна всем, чтобы понять что происходит
         if (adminBtn) {
-            adminBtn.classList.remove("hidden");
+            adminBtn.classList.toggle("hidden", !isAdmin());
         }
 
         actionButtons.forEach((btn) => { btn.disabled = sleeping; });
@@ -1333,11 +1332,7 @@
 
     if (adminBtn) {
         adminBtn.addEventListener("click", () => {
-            const uid = getMyUserId();
-            if (uid !== ADMIN_ID) {
-                alert(`Не админ\n\nТвой ID: ${uid}\nADMIN_ID: ${ADMIN_ID}\n\nЕсли ID верный — значит Telegram не передаёт данные`);
-                return;
-            }
+            if (!isAdmin()) return;
             hideAll();
             adminPanelEl.classList.remove("hidden");
             renderAdmin();
