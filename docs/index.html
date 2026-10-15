@@ -4,11 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Мой питомец</title>
-    <link rel="stylesheet" href="style.css?v=19">
-    <script src="telegram-web-app.js?v=19"></script>
+    <link rel="stylesheet" href="style.css?v=21">
+    <script src="telegram-web-app.js?v=21"></script>
 </head>
 <body>
 
+    <!-- Онбординг -->
     <div id="onboarding" class="screen onboarding">
         <div class="onboarding__content">
             <div class="onboarding__emoji">🐣</div>
@@ -20,6 +21,7 @@
         </div>
     </div>
 
+    <!-- Основной экран -->
     <div id="game" class="screen game hidden">
         <header class="header">
             <div class="header__name" id="petName">Питомец</div>
@@ -52,6 +54,7 @@
         </div>
     </div>
 
+    <!-- Магазин -->
     <div id="shop" class="screen shop hidden">
         <header class="header">
             <div class="header__name">Магазин</div>
@@ -65,6 +68,7 @@
         <div class="actions"><button class="action action--wide" id="shopClose">← Назад</button></div>
     </div>
 
+    <!-- Модалка кормления -->
     <div id="feedModal" class="mg-modal hidden">
         <div class="mg-modal__content">
             <h2 class="mg-modal__title">Чем покормить?</h2>
@@ -78,6 +82,7 @@
         </div>
     </div>
 
+    <!-- Выбор игры -->
     <div id="gameChooser" class="screen onboarding hidden">
         <div class="onboarding__content">
             <div class="onboarding__emoji">🎮</div>
@@ -115,6 +120,7 @@
         </div>
     </div>
 
+    <!-- Выбор сложности Block Blast -->
     <div id="bbLevels" class="screen onboarding hidden">
         <div class="onboarding__content">
             <div class="onboarding__emoji">🧩</div>
@@ -145,6 +151,7 @@
         </div>
     </div>
 
+    <!-- Выбор сложности Судоку -->
     <div id="sudokuLevels" class="screen onboarding hidden">
         <div class="onboarding__content">
             <div class="onboarding__emoji">🔢</div>
@@ -175,6 +182,7 @@
         </div>
     </div>
 
+    <!-- Кликер: превью -->
     <div id="minigameIntro" class="screen onboarding hidden">
         <div class="onboarding__content">
             <div class="onboarding__emoji">🎮</div>
@@ -186,6 +194,7 @@
         </div>
     </div>
 
+    <!-- Кликер: игра -->
     <div id="minigame" class="screen minigame hidden">
         <header class="header">
             <div class="header__name">Кликер</div>
@@ -209,6 +218,7 @@
         </div>
     </div>
 
+    <!-- Block Blast -->
     <div id="blockblast" class="screen blockblast hidden">
         <header class="header">
             <div class="header__name">Block Blast <span id="bbLevelIcon">🟢</span></div>
@@ -305,7 +315,7 @@
         </div>
     </div>
 
-    <!-- Админка -->
+    <!-- Админ-панель -->
     <div id="adminPanel" class="screen shop hidden">
         <header class="header">
             <div class="header__name">🛠 Админ</div>
@@ -322,6 +332,7 @@
         </div>
     </div>
 
+    <!-- Модалка сна -->
     <div id="sleepModal" class="mg-modal hidden">
         <div class="mg-modal__content">
             <h2 class="mg-modal__title">Как спать будем?</h2>
@@ -339,6 +350,11 @@
         </div>
     </div>
 
-    <script src="script.js?v=19"></script>
+    <!-- Модули -->
+    <script src="core.js?v=21"></script>
+    <script src="clicker.js?v=21"></script>
+    <script src="blockblast.js?v=21"></script>
+    <script src="sudoku.js?v=21"></script>
+    <script src="leaderboard.js?v=21"></script>
 </body>
 </html>
