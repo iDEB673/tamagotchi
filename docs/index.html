@@ -108,6 +108,13 @@
                     <div class="game-choice__sub">3 уровня сложности · 15 ⚡</div>
                 </div>
             </button>
+            <button id="chooseLeaderboard" class="game-choice">
+                <div class="game-choice__emoji">🏆</div>
+                <div class="game-choice__text">
+                    <div class="game-choice__title">Таблица лидеров</div>
+                    <div class="game-choice__sub">лучшие игроки по уровням</div>
+                </div>
+            </button>
             <button id="chooseCancel" class="onboarding__button onboarding__button--secondary">Выйти</button>
         </div>
     </div>
@@ -250,6 +257,39 @@
         <div class="shop__list" id="adminList"></div>
         <div class="actions">
             <button class="action action--wide" id="adminClose">← Назад</button>
+        </div>
+    </div>
+
+        <!-- Модалка победы -->
+    <div id="bbWinModal" class="mg-modal hidden">
+        <div class="mg-modal__content">
+            <div class="mg-modal__emoji">🏆</div>
+            <h2 class="mg-modal__title">Победа!</h2>
+            <div class="mg-modal__reward" id="bbWinReward">+75 💰</div>
+            <p class="mg-modal__sub" id="bbWinSub">Счёт: 700</p>
+            <button id="bbWinInfinite" class="mg-modal__btn mg-modal__btn--primary mg-modal__btn--wide" style="margin-bottom:10px;">
+                ♾ Бесконечный режим
+            </button>
+            <div class="mg-modal__buttons">
+                <button id="bbWinRepeat" class="mg-modal__btn">Повторить</button>
+                <button id="bbWinExit" class="mg-modal__btn">Выйти</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Экран лидерборда -->
+    <div id="leaderboard" class="screen shop hidden">
+        <header class="header">
+            <div class="header__name">🏆 Лидеры</div>
+        </header>
+        <div class="shop__tabs">
+            <button class="shop__tab shop__tab--active" data-ltab="easy">🟢 Лёгкий</button>
+            <button class="shop__tab" data-ltab="normal">🟡 Средний</button>
+            <button class="shop__tab" data-ltab="hard">🔴 Сложный</button>
+        </div>
+        <div class="shop__list" id="leaderboardList"></div>
+        <div class="actions">
+            <button class="action action--wide" id="leaderboardClose">← Назад</button>
         </div>
     </div>
 

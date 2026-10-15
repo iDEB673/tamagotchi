@@ -268,3 +268,67 @@ body {
 .header__admin:active {
     background: var(--bg-card);
 }
+
+/* ---------- Модалка победы ---------- */
+
+.mg-modal__emoji {
+    font-size: 64px;
+    margin-bottom: 12px;
+}
+
+/* ---------- Таблица лидеров ---------- */
+
+.lb-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: var(--bg-card);
+    border-radius: 12px;
+    border: 2px solid transparent;
+}
+
+.lb-item--me {
+    border-color: var(--accent);
+    background: #2a3746;
+}
+
+.lb-item--top1 { background: linear-gradient(90deg, #4a3a12, var(--bg-card)); }
+.lb-item--top2 { background: linear-gradient(90deg, #3a3a3a, var(--bg-card)); }
+.lb-item--top3 { background: linear-gradient(90deg, #3a2812, var(--bg-card)); }
+
+.lb-item__rank {
+    font-size: 20px;
+    font-weight: 700;
+    min-width: 36px;
+    text-align: center;
+    color: var(--yellow);
+}
+
+.lb-item__info {
+    flex: 1;
+    min-width: 0;
+}
+
+.lb-item__name {
+    font-weight: 600;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.lb-item__you {
+    font-size: 12px;
+    color: var(--accent);
+}
+
+.lb-item__score {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--green);
+}
+
+.lb-separator {
+    height: 12px;
+}

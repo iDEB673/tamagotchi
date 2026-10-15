@@ -5,31 +5,20 @@
     const ADMIN_ID = 5410929450;
 
     function getMyUserId() {
-        // Пробуем initDataUnsafe
         const unsafeId = tg?.initDataUnsafe?.user?.id;
         if (unsafeId) return parseInt(unsafeId, 10);
-
-        // Парсим initData вручную
         const initData = tg?.initData;
         if (!initData) return null;
         try {
             const params = new URLSearchParams(initData);
-            const userStr = params.get("user");
-            if (!userStr) return null;
-            const user = JSON.parse(userStr);
-            return user.id ? parseInt(user.id, 10) : null;
-        } catch (e) {
-            return null;
-        }
+            const u = params.get("user");
+            if (!u) return null;
+            return JSON.parse(u).id ? parseInt(JSON.parse(u).id, 10) : null;
+        } catch (e) { return null; }
     }
 
-    function isAdmin() {
-        return getMyUserId() === ADMIN_ID;
-    }
-
-    function isOnline() {
-        return !!(tg?.initData && tg.initData.length > 0);
-    }
+    function isAdmin() { return getMyUserId() === ADMIN_ID; }
+    function isOnline() { return !!(tg?.initData && tg.initData.length > 0); }
 
     async function apiFetch(path, options = {}) {
         const initData = tg?.initData;
@@ -61,7 +50,7 @@
 
     const BB_LEVELS = {
         easy: {
-            label: "Лёгкий", emoji: "🟢", size: 6,
+            label: "Лёгкий", emoji: "🟢", size: 6, winScore: 300,
             rewards: [
                 { min: 500, coins: 15 },
                 { min: 300, coins: 10 },
@@ -73,7 +62,7 @@
             ],
         },
         normal: {
-            label: "Средний", emoji: "🟡", size: 8,
+            label: "Средний", emoji: "🟡", size: 8, winScore: 500,
             rewards: [
                 { min: 500, coins: 40 },
                 { min: 300, coins: 25 },
@@ -85,7 +74,7 @@
             ],
         },
         hard: {
-            label: "Сложный", emoji: "🔴", size: 10,
+            label: "Сложный", emoji: "🔴", size: 10, winScore: 700,
             rewards: [
                 { min: 500, coins: 75 },
                 { min: 300, coins: 50 },
@@ -108,48 +97,32 @@
     }
 
     const BB_SHAPES_EASY = [
-        [[0,0]],
-        [[0,0],[1,0]],
-        [[0,0],[0,1]],
-        [[0,0],[1,0],[2,0]],
-        [[0,0],[0,1],[0,2]],
-        [[0,0],[1,0],[0,1]],
-        [[0,0],[0,1],[1,1]],
-        [[0,0],[1,0],[1,1]],
+        [[0,0]], [[0,0],[1,0]], [[0,0],[0,1]],
+        [[0,0],[1,0],[2,0]], [[0,0],[0,1],[0,2]],
+        [[0,0],[1,0],[0,1]], [[0,0],[0,1],[1,1]], [[0,0],[1,0],[1,1]],
     ];
-
     const BB_SHAPES_MEDIUM = [
         ...BB_SHAPES_EASY,
-        [[0,0],[1,0],[2,0],[3,0]],
-        [[0,0],[0,1],[0,2],[0,3]],
-        [[0,0],[1,0],[0,1],[1,1]],
-        [[0,0],[1,0],[2,0],[0,1]],
+        [[0,0],[1,0],[2,0],[3,0]], [[0,0],[0,1],[0,2],[0,3]],
+        [[0,0],[1,0],[0,1],[1,1]], [[0,0],[1,0],[2,0],[0,1]],
         [[0,0],[0,1],[0,2],[1,2]],
     ];
-
     const BB_SHAPES_HARD = [
         ...BB_SHAPES_MEDIUM,
-        [[0,0],[1,0],[2,0],[3,0],[4,0]],
-        [[0,0],[0,1],[0,2],[0,3],[0,4]],
+        [[0,0],[1,0],[2,0],[3,0],[4,0]], [[0,0],[0,1],[0,2],[0,3],[0,4]],
         [[0,0],[1,0],[2,0],[0,1],[1,1],[2,1]],
-        [[0,0],[1,0],[2,0],[3,0],[0,1]],
-        [[0,0],[1,0],[2,0],[2,1],[2,2]],
+        [[0,0],[1,0],[2,0],[3,0],[0,1]], [[0,0],[1,0],[2,0],[2,1],[2,2]],
     ];
 
     function bbGetShapePool(levelKey, score) {
         if (levelKey === "easy") return BB_SHAPES_EASY;
-        if (levelKey === "normal") {
-            return score < 150 ? BB_SHAPES_EASY : BB_SHAPES_MEDIUM;
-        }
+        if (levelKey === "normal") return score < 150 ? BB_SHAPES_EASY : BB_SHAPES_MEDIUM;
         if (score < 150) return BB_SHAPES_EASY;
         if (score < 350) return BB_SHAPES_MEDIUM;
         return BB_SHAPES_HARD;
     }
 
-    const BB_COLORS = [
-        "#ff6b6b", "#feca57", "#48dbfb", "#1dd1a1",
-        "#a29bfe", "#fd79a8", "#54a0ff", "#26de81",
-    ];
+    const BB_COLORS = ["#ff6b6b","#feca57","#48dbfb","#1dd1a1","#a29bfe","#fd79a8","#54a0ff","#26de81"];
 
     // ---------- Еда ----------
 
@@ -160,8 +133,6 @@
         pizza:    { name: "Пицца",    emoji: "🍕", price: 7,  hunger: 14 },
         shawarma: { name: "Шаурма",   emoji: "🌯", price: 15, hunger: 35 },
     };
-
-    // ---------- Одежда ----------
 
     const SHOP_ITEMS = {
         cap:        { name: "Кепка",            emoji: "🧢", price: 50 },
@@ -177,9 +148,7 @@
         stats: { hunger: 100, happiness: 100, energy: 100, cleanliness: 100 },
         lastUpdate: Date.now(), gamesPlayed: 0,
         sleepUntil: null, sleepGain: 0, sleepStartedAt: null,
-        owned: [],
-        equipped: null,
-        food: {},
+        owned: [], equipped: null, food: {},
     });
 
     let state = load() || defaultState();
@@ -241,9 +210,11 @@
     const mgModalEl = $("mgResult");
     const bbModalEl = $("bbResult");
     const bbExitModalEl = $("bbExitModal");
+    const bbWinModalEl = $("bbWinModal");
     const feedModalEl = $("feedModal");
     const sleepModalEl = $("sleepModal");
     const adminPanelEl = $("adminPanel");
+    const leaderboardEl = $("leaderboard");
     const sleepBannerEl = $("sleepBanner");
     const sleepTimerEl = $("sleepTimer");
     const nameInput = $("nameInput");
@@ -270,7 +241,8 @@
     function hideAll() {
         if (typeof bbCleanupGhosts === "function") bbCleanupGhosts();
         [onboardingEl, gameEl, shopEl, chooserEl, bbLevelsEl, introEl, minigameEl, bbEl,
-         sleepModalEl, mgModalEl, bbModalEl, bbExitModalEl, feedModalEl, adminPanelEl]
+         sleepModalEl, mgModalEl, bbModalEl, bbExitModalEl, bbWinModalEl, feedModalEl,
+         adminPanelEl, leaderboardEl]
             .forEach(el => el && el.classList.add("hidden"));
     }
 
@@ -322,10 +294,7 @@
             petHatEl.dataset.item = "";
         }
 
-        if (adminBtn) {
-            adminBtn.classList.toggle("hidden", !isAdmin());
-        }
-
+        if (adminBtn) adminBtn.classList.toggle("hidden", !isAdmin());
         actionButtons.forEach((btn) => { btn.disabled = sleeping; });
     }
 
@@ -336,9 +305,24 @@
         nameInput.addEventListener("input", () => {
             nameConfirm.disabled = nameInput.value.trim().length === 0;
         });
-        const confirm = () => {
+        const confirm = async () => {
             const name = nameInput.value.trim();
             if (!name) return;
+            if (isOnline()) {
+                try {
+                    await apiFetch("/api/pet/name", {
+                        method: "POST",
+                        body: JSON.stringify({ name }),
+                    });
+                } catch (e) {
+                    if (!e.message.includes("409")) {
+                        alert("Ошибка: " + e.message);
+                        return;
+                    }
+                    alert("Это имя уже занято. Придумай другое.");
+                    return;
+                }
+            }
             state.petName = name;
             save();
             showGame();
@@ -356,12 +340,8 @@
     async function applyAction(name) {
         const action = ACTIONS[name];
         if (!action || isSleeping()) return;
-
         if (action.cost > 0) {
-            if (state.coins < action.cost) {
-                alert(`Нужно ${action.cost} монет. Заработай в мини-игре!`);
-                return;
-            }
+            if (state.coins < action.cost) { alert(`Нужно ${action.cost} монет.`); return; }
             if (isOnline()) {
                 try {
                     const res = await apiFetch("/api/coins/spend", {
@@ -377,7 +357,6 @@
                 state.coins -= action.cost;
             }
         }
-
         for (const [key, delta] of Object.entries(action)) {
             if (key === "cost") continue;
             state.stats[key] = Math.max(0, Math.min(100, state.stats[key] + delta));
@@ -409,7 +388,6 @@
         updateShopTabs();
         renderShop();
     });
-
     $("shopClose").addEventListener("click", () => showGame());
 
     document.querySelectorAll(".shop__tab[data-tab]").forEach(tab => {
@@ -419,7 +397,6 @@
             renderShop();
         });
     });
-
     function updateShopTabs() {
         document.querySelectorAll(".shop__tab[data-tab]").forEach(t => {
             t.classList.toggle("shop__tab--active", t.dataset.tab === shopTab);
@@ -439,30 +416,23 @@
         const equipped = state.equipped;
 
         if (owned.length > 0) {
-            const head1 = document.createElement("div");
-            head1.className = "shop-section";
-            head1.textContent = "Мои предметы";
-            list.appendChild(head1);
-
+            const h = document.createElement("div");
+            h.className = "shop-section";
+            h.textContent = "Мои предметы";
+            list.appendChild(h);
             for (const id of owned) {
                 const item = SHOP_ITEMS[id];
                 if (!item) continue;
-
                 const row = document.createElement("div");
                 row.className = "shop-item shop-item--owned";
                 if (equipped === id) row.classList.add("shop-item--equipped");
-
                 const preview = document.createElement("div");
                 preview.className = "shop-item__preview";
                 preview.textContent = item.emoji;
-
                 const info = document.createElement("div");
                 info.className = "shop-item__info";
-                info.innerHTML = `
-                    <div class="shop-item__name">${item.name}</div>
-                    <div class="shop-item__price">${equipped === id ? "Надето" : "В инвентаре"}</div>
-                `;
-
+                info.innerHTML = `<div class="shop-item__name">${item.name}</div>
+                    <div class="shop-item__price">${equipped === id ? "Надето" : "В инвентаре"}</div>`;
                 const btn = document.createElement("button");
                 btn.className = "shop-item__btn";
                 if (equipped === id) {
@@ -474,84 +444,59 @@
                     btn.classList.add("shop-item__btn--equip");
                     btn.addEventListener("click", () => equipItem(id));
                 }
-
-                row.appendChild(preview);
-                row.appendChild(info);
-                row.appendChild(btn);
+                row.appendChild(preview); row.appendChild(info); row.appendChild(btn);
                 list.appendChild(row);
             }
         }
-
-        const buyable = Object.entries(SHOP_ITEMS)
-            .filter(([id, item]) => !item.hidden && !owned.includes(id));
-
+        const buyable = Object.entries(SHOP_ITEMS).filter(([id, item]) => !item.hidden && !owned.includes(id));
         if (buyable.length > 0) {
-            const head2 = document.createElement("div");
-            head2.className = "shop-section";
-            head2.textContent = "Магазин";
-            list.appendChild(head2);
-
+            const h = document.createElement("div");
+            h.className = "shop-section";
+            h.textContent = "Магазин";
+            list.appendChild(h);
             for (const [id, item] of buyable) {
                 const row = document.createElement("div");
                 row.className = "shop-item";
-
                 const preview = document.createElement("div");
                 preview.className = "shop-item__preview";
                 preview.textContent = item.emoji;
-
                 const info = document.createElement("div");
                 info.className = "shop-item__info";
-                info.innerHTML = `
-                    <div class="shop-item__name">${item.name}</div>
-                    <div class="shop-item__price">${item.price} 💰</div>
-                `;
-
+                info.innerHTML = `<div class="shop-item__name">${item.name}</div>
+                    <div class="shop-item__price">${item.price} 💰</div>`;
                 const btn = document.createElement("button");
                 btn.className = "shop-item__btn";
                 btn.textContent = "Купить";
                 btn.disabled = state.coins < item.price;
                 btn.addEventListener("click", () => buyItem(id));
-
-                row.appendChild(preview);
-                row.appendChild(info);
-                row.appendChild(btn);
+                row.appendChild(preview); row.appendChild(info); row.appendChild(btn);
                 list.appendChild(row);
             }
         }
     }
 
     function renderFoodTab(list) {
-        const head = document.createElement("div");
-        head.className = "shop-section";
-        head.textContent = "Еда";
-        list.appendChild(head);
-
+        const h = document.createElement("div");
+        h.className = "shop-section";
+        h.textContent = "Еда";
+        list.appendChild(h);
         for (const [id, food] of Object.entries(FOOD_ITEMS)) {
             const count = state.food[id] || 0;
-
             const row = document.createElement("div");
             row.className = "shop-item";
-
             const preview = document.createElement("div");
             preview.className = "shop-item__preview";
             preview.textContent = food.emoji;
-
             const info = document.createElement("div");
             info.className = "shop-item__info";
-            info.innerHTML = `
-                <div class="shop-item__name">${food.name} ${count > 0 ? `<span style="color:#5288c1">×${count}</span>` : ""}</div>
-                <div class="shop-item__price">${food.price} 💰 · +${food.hunger} 🍖</div>
-            `;
-
+            info.innerHTML = `<div class="shop-item__name">${food.name} ${count > 0 ? `<span style="color:#5288c1">×${count}</span>` : ""}</div>
+                <div class="shop-item__price">${food.price} 💰 · +${food.hunger} 🍖</div>`;
             const btn = document.createElement("button");
             btn.className = "shop-item__btn";
             btn.textContent = "Купить";
             btn.disabled = state.coins < food.price;
             btn.addEventListener("click", () => buyFood(id));
-
-            row.appendChild(preview);
-            row.appendChild(info);
-            row.appendChild(btn);
+            row.appendChild(preview); row.appendChild(info); row.appendChild(btn);
             list.appendChild(row);
         }
     }
@@ -560,7 +505,6 @@
         const food = FOOD_ITEMS[id];
         if (!food) return;
         if (state.coins < food.price) { alert("Мало монет"); return; }
-
         if (isOnline()) {
             try {
                 const res = await apiFetch("/api/coins/spend", {
@@ -572,13 +516,9 @@
                 if (e.message === "OFFLINE") state.coins -= food.price;
                 else { alert("Ошибка: " + e.message); return; }
             }
-        } else {
-            state.coins -= food.price;
-        }
-
+        } else state.coins -= food.price;
         state.food[id] = (state.food[id] || 0) + 1;
-        save();
-        renderShop();
+        save(); renderShop();
         if (tg) tg.HapticFeedback?.notificationOccurred("success");
     }
 
@@ -587,16 +527,13 @@
         if (!item) return;
         if (state.coins < item.price) { alert("Мало монет"); return; }
         if (state.owned.includes(id)) return;
-
         const doLocal = () => {
             state.coins -= item.price;
             state.owned.push(id);
             state.equipped = id;
-            save();
-            renderShop();
+            save(); renderShop();
             if (tg) tg.HapticFeedback?.notificationOccurred("success");
         };
-
         if (isOnline()) {
             apiFetch("/api/shop/buy", {
                 method: "POST",
@@ -605,30 +542,24 @@
                 state.coins = res.coins;
                 state.owned.push(id);
                 state.equipped = id;
-                save();
-                renderShop();
+                save(); renderShop();
                 if (tg) tg.HapticFeedback?.notificationOccurred("success");
             }).catch(e => {
                 if (e.message === "OFFLINE") doLocal();
                 else alert("Ошибка покупки: " + e.message);
             });
-        } else {
-            doLocal();
-        }
+        } else doLocal();
     }
 
     function equipItem(id) {
         if (!state.owned.includes(id)) return;
         state.equipped = id;
-        save();
-        renderShop();
+        save(); renderShop();
         if (tg) tg.HapticFeedback?.impactOccurred("light");
     }
-
     function unequipItem() {
         state.equipped = null;
-        save();
-        renderShop();
+        save(); renderShop();
     }
 
     // ---------- Кормление ----------
@@ -638,12 +569,10 @@
         renderFeedList();
         feedModalEl.classList.remove("hidden");
     }
-
     function renderFeedList() {
         const list = $("feedList");
         list.innerHTML = "";
         const ownedFoods = Object.entries(state.food).filter(([_, count]) => count > 0);
-
         if (ownedFoods.length === 0) {
             const empty = document.createElement("div");
             empty.className = "shop-empty";
@@ -651,46 +580,36 @@
             list.appendChild(empty);
             return;
         }
-
         for (const [id, count] of ownedFoods) {
             const food = FOOD_ITEMS[id];
             if (!food) continue;
-
             const row = document.createElement("div");
             row.className = "feed-item";
             if (state.stats.hunger >= 100) row.classList.add("feed-item--disabled");
-
-            row.innerHTML = `
-                <div class="feed-item__emoji">${food.emoji}</div>
+            row.innerHTML = `<div class="feed-item__emoji">${food.emoji}</div>
                 <div class="feed-item__info">
                     <div class="feed-item__name">${food.name}</div>
                     <div class="feed-item__sub">+${food.hunger} 🍖</div>
                 </div>
-                <div class="feed-item__count">×${count}</div>
-            `;
-
+                <div class="feed-item__count">×${count}</div>`;
             row.addEventListener("click", () => eatFood(id));
             list.appendChild(row);
         }
     }
-
     function eatFood(id) {
         const food = FOOD_ITEMS[id];
         if (!food) return;
         if (!state.food[id] || state.food[id] <= 0) return;
         if (state.stats.hunger >= 100) { alert("Питомец не голоден!"); return; }
-
         state.food[id] -= 1;
         if (state.food[id] <= 0) delete state.food[id];
         state.stats.hunger = Math.min(100, state.stats.hunger + food.hunger);
         state.stats.happiness = Math.min(100, state.stats.happiness + 2);
         save();
-
         feedModalEl.classList.add("hidden");
         render();
         if (tg) tg.HapticFeedback?.impactOccurred("light");
     }
-
     $("feedCancel").addEventListener("click", () => feedModalEl.classList.add("hidden"));
     $("feedShop").addEventListener("click", () => {
         feedModalEl.classList.add("hidden");
@@ -711,24 +630,18 @@
 
     function openMinigameIntro() {
         if (isSleeping()) return;
-        const energyNow = Math.round(state.stats.energy);
-        $("introEnergy").textContent = energyNow;
-        const startBtn = $("introStart");
-        if (energyNow < MG_ENERGY_COST) {
-            startBtn.disabled = true;
-            startBtn.textContent = `Нужно ${MG_ENERGY_COST} ⚡`;
-        } else {
-            startBtn.disabled = false;
-            startBtn.textContent = `Начать (−${MG_ENERGY_COST} ⚡)`;
-        }
+        const e = Math.round(state.stats.energy);
+        $("introEnergy").textContent = e;
+        const b = $("introStart");
+        if (e < MG_ENERGY_COST) { b.disabled = true; b.textContent = `Нужно ${MG_ENERGY_COST} ⚡`; }
+        else { b.disabled = false; b.textContent = `Начать (−${MG_ENERGY_COST} ⚡)`; }
         hideAll();
         introEl.classList.remove("hidden");
     }
     $("introStart").addEventListener("click", () => {
         if (state.stats.energy < MG_ENERGY_COST) return;
         state.stats.energy -= MG_ENERGY_COST;
-        save();
-        startMinigame();
+        save(); startMinigame();
     });
     $("introCancel").addEventListener("click", () => showGame());
 
@@ -740,7 +653,6 @@
         mgScoreEl.textContent = "0";
         mgTimerEl.textContent = MG_DURATION;
         mgEnergyEl.textContent = Math.round(state.stats.energy);
-
         if (mgTickerId) clearInterval(mgTickerId);
         mgTickerId = setInterval(() => {
             if (!mgActive) return;
@@ -748,7 +660,6 @@
             if (leftMs <= 0) { mgTimerEl.textContent = "0"; endMinigame(); return; }
             mgTimerEl.textContent = Math.ceil(leftMs / 1000);
         }, 100);
-
         if (mgTimeoutId) clearTimeout(mgTimeoutId);
         mgTimeoutId = setTimeout(() => { if (mgActive) endMinigame(); }, MG_DURATION * 1000 + 50);
     }
@@ -758,10 +669,8 @@
         mgActive = false;
         if (mgTickerId) { clearInterval(mgTickerId); mgTickerId = null; }
         if (mgTimeoutId) { clearTimeout(mgTimeoutId); mgTimeoutId = null; }
-
         const win = mgScore >= MG_GOAL;
         let reward = win ? MG_REWARD : 0;
-
         if (isOnline()) {
             try {
                 const res = await apiFetch("/api/game/reward", {
@@ -770,13 +679,8 @@
                 });
                 state.coins = res.coins;
                 reward = res.reward;
-            } catch (e) {
-                if (e.message === "OFFLINE") state.coins += reward;
-            }
-        } else {
-            state.coins += reward;
-        }
-
+            } catch (e) { if (e.message === "OFFLINE") state.coins += reward; }
+        } else state.coins += reward;
         if (win) {
             mgModalTitle.textContent = "Ты выиграл:";
             mgModalReward.textContent = `+${reward} 💰`;
@@ -789,13 +693,11 @@
             mgModalReward.classList.add("loss");
             mgModalSub.textContent = `Накликал ${mgScore} из ${MG_GOAL}`;
         }
-
         state.gamesPlayed += 1;
         save();
         mgModalRepeat.disabled = state.stats.energy < MG_ENERGY_COST;
         mgModalEl.classList.remove("hidden");
     }
-
     mgClickBtn.addEventListener("click", () => {
         if (!mgActive) return;
         mgScore += 1;
@@ -806,8 +708,7 @@
     mgModalRepeat.addEventListener("click", () => {
         if (state.stats.energy < MG_ENERGY_COST) return;
         state.stats.energy -= MG_ENERGY_COST;
-        save();
-        startMinigame();
+        save(); startMinigame();
     });
 
     // ---------- Block Blast ----------
@@ -815,6 +716,8 @@
     let bbGrid = [], bbShapes = [], bbScore = 0, bbActive = false, bbDrag = null, bbGhostEl = null;
     let bbCurrentLevel = "normal";
     let bbSize = 8;
+    let bbInfiniteMode = false;
+    let bbFinished = false;
 
     function bbNewShape() {
         const pool = bbGetShapePool(bbCurrentLevel, bbScore);
@@ -826,7 +729,7 @@
         bbSize = BB_LEVELS[bbCurrentLevel].size;
         bbGrid = Array.from({ length: bbSize }, () => Array(bbSize).fill(null));
         bbShapes = [bbNewShape(), bbNewShape(), bbNewShape()];
-        bbScore = 0; bbActive = true; bbDrag = null;
+        bbScore = 0; bbActive = true; bbDrag = null; bbFinished = false;
     }
     function bbCleanupGhosts() {
         document.querySelectorAll(".bb-ghost").forEach(el => el.remove());
@@ -846,10 +749,7 @@
                 const cell = document.createElement("div");
                 cell.className = "bb-cell";
                 cell.dataset.x = x; cell.dataset.y = y;
-                if (bbGrid[y][x]) {
-                    cell.classList.add("bb-cell--filled");
-                    cell.style.background = bbGrid[y][x];
-                }
+                if (bbGrid[y][x]) { cell.classList.add("bb-cell--filled"); cell.style.background = bbGrid[y][x]; }
                 gridEl.appendChild(cell);
             }
         }
@@ -866,16 +766,11 @@
             inner.className = "bb-shape__grid";
             inner.style.gridTemplateColumns = `repeat(${maxX}, var(--bb-mini, 16px))`;
             inner.style.gridTemplateRows = `repeat(${maxY}, var(--bb-mini, 16px))`;
-            for (let y = 0; y < maxY; y++) {
-                for (let x = 0; x < maxX; x++) {
-                    const mini = document.createElement("div");
-                    mini.className = "bb-mini";
-                    if (occupied.has(`${x},${y}`)) {
-                        mini.classList.add("bb-mini--filled");
-                        mini.style.background = shape.color;
-                    }
-                    inner.appendChild(mini);
-                }
+            for (let y = 0; y < maxY; y++) for (let x = 0; x < maxX; x++) {
+                const mini = document.createElement("div");
+                mini.className = "bb-mini";
+                if (occupied.has(`${x},${y}`)) { mini.classList.add("bb-mini--filled"); mini.style.background = shape.color; }
+                inner.appendChild(mini);
             }
             slot.appendChild(inner);
             slot.addEventListener("pointerdown", (e) => bbStartDrag(i, e));
@@ -883,6 +778,8 @@
         });
         $("bbScore").textContent = bbScore;
         $("bbEnergy").textContent = Math.round(state.stats.energy);
+        const modeEl = $("bbLevelIcon");
+        if (modeEl) modeEl.textContent = bbInfiniteMode ? "♾" : BB_LEVELS[bbCurrentLevel].emoji;
     }
 
     function bbCanPlace(cells, ox, oy) {
@@ -901,12 +798,11 @@
         return { x, y };
     }
     function bbClearPreview() {
-        document.querySelectorAll(".bb-cell--preview-ok, .bb-cell--preview-bad")
-            .forEach(el => {
-                el.classList.remove("bb-cell--preview-ok", "bb-cell--preview-bad");
-                const x = parseInt(el.dataset.x, 10), y = parseInt(el.dataset.y, 10);
-                el.style.background = bbGrid[y] && bbGrid[y][x] ? bbGrid[y][x] : "";
-            });
+        document.querySelectorAll(".bb-cell--preview-ok, .bb-cell--preview-bad").forEach(el => {
+            el.classList.remove("bb-cell--preview-ok", "bb-cell--preview-bad");
+            const x = parseInt(el.dataset.x, 10), y = parseInt(el.dataset.y, 10);
+            el.style.background = bbGrid[y] && bbGrid[y][x] ? bbGrid[y][x] : "";
+        });
     }
     function bbShowPreview(cells, ox, oy, valid, color) {
         bbClearPreview();
@@ -936,8 +832,7 @@
         for (let i = 0; i < mins.length; i++) {
             const r = mins[i].getBoundingClientRect();
             if (evt.clientX >= r.left && evt.clientX <= r.right && evt.clientY >= r.top && evt.clientY <= r.bottom) {
-                grabCellX = cellArr[i].x; grabCellY = cellArr[i].y;
-                break;
+                grabCellX = cellArr[i].x; grabCellY = cellArr[i].y; break;
             }
         }
         bbDrag = { shapeIndex, shape, miniSize, grabCellX, grabCellY, lastHoverCell: null };
@@ -1002,6 +897,16 @@
         if (bbShapes.every(s => s === null)) bbShapes = [bbNewShape(), bbNewShape(), bbNewShape()];
         bbRender();
         if (tg) tg.HapticFeedback?.impactOccurred("light");
+
+        // Проверка победы
+        const winScore = BB_LEVELS[bbCurrentLevel].winScore;
+        if (!bbInfiniteMode && bbScore >= winScore && !bbFinished) {
+            bbFinished = true;
+            bbActive = false;
+            bbOnWin();
+            return;
+        }
+
         if (!bbAnyShapeFits()) bbGameOver();
     }
     function bbClearLines() {
@@ -1031,9 +936,7 @@
     async function bbFinishAndReward() {
         bbCleanupGhosts();
         bbActive = false;
-
         let coins = bbCalcReward(bbCurrentLevel, bbScore);
-
         if (isOnline()) {
             try {
                 const res = await apiFetch("/api/game/reward", {
@@ -1042,31 +945,48 @@
                 });
                 coins = res.reward;
                 state.coins = res.coins;
-            } catch (e) {
-                if (e.message === "OFFLINE") state.coins += coins;
-            }
-        } else {
-            state.coins += coins;
-        }
-
+            } catch (e) { if (e.message === "OFFLINE") state.coins += coins; }
+        } else state.coins += coins;
         state.gamesPlayed += 1;
         save();
         return coins;
     }
 
+    async function bbSubmitInfiniteScore() {
+        if (!isOnline() || bbScore === 0) return;
+        try {
+            await apiFetch("/api/blockblast/score", {
+                method: "POST",
+                body: JSON.stringify({ level: bbCurrentLevel, score: bbScore }),
+            });
+        } catch (e) { console.warn("score save failed:", e); }
+    }
+
     async function bbGameOver() {
         const coins = await bbFinishAndReward();
+        if (bbInfiniteMode) {
+            await bbSubmitInfiniteScore();
+            bbInfiniteMode = false;
+        }
         $("bbResultReward").textContent = `+${coins} 💰`;
         $("bbResultSub").textContent = `Счёт: ${bbScore}`;
         bbModalEl.classList.remove("hidden");
     }
 
+    async function bbOnWin() {
+        const coins = await bbFinishAndReward();
+        const winScore = BB_LEVELS[bbCurrentLevel].winScore;
+        $("bbWinReward").textContent = `+${coins} 💰`;
+        $("bbWinSub").textContent = `Счёт: ${bbScore} (цель: ${winScore})`;
+        bbWinModalEl.classList.remove("hidden");
+    }
+
     document.querySelectorAll(".level-btn").forEach(btn => {
-        btn.addEventListener("click", () => startBlockBlast(btn.dataset.level));
+        btn.addEventListener("click", () => startBlockBlast(btn.dataset.level, false));
     });
     $("bbLevelsCancel").addEventListener("click", () => openGameChooser());
 
-    function startBlockBlast(levelKey) {
+    function startBlockBlast(levelKey, infinite) {
         bbCleanupGhosts();
         if (isSleeping()) return;
         if (state.stats.energy < BB_ENERGY_COST) {
@@ -1075,11 +995,10 @@
         }
         state.stats.energy -= BB_ENERGY_COST;
         bbCurrentLevel = levelKey;
+        bbInfiniteMode = !!infinite;
         save();
-
         hideAll();
         bbEl.classList.remove("hidden");
-        $("bbLevelIcon").textContent = BB_LEVELS[levelKey].emoji;
         bbReset();
         bbRender();
     }
@@ -1089,14 +1008,17 @@
         if (!bbActive || bbScore === 0) { showGame(); return; }
         const reward = bbCalcReward(bbCurrentLevel, bbScore);
         $("bbExitReward").textContent = `+${reward} 💰`;
-        $("bbExitSub").textContent = `Счёт: ${bbScore}`;
+        $("bbExitSub").textContent = `Счёт: ${bbScore}` + (bbInfiniteMode ? " · счёт уйдёт в лидерборд" : "");
         bbExitModalEl.classList.remove("hidden");
     });
-
     $("bbExitNo").addEventListener("click", () => bbExitModalEl.classList.add("hidden"));
     $("bbExitYes").addEventListener("click", async () => {
         bbExitModalEl.classList.add("hidden");
         await bbFinishAndReward();
+        if (bbInfiniteMode) {
+            await bbSubmitInfiniteScore();
+            bbInfiniteMode = false;
+        }
         showGame();
     });
 
@@ -1106,15 +1028,110 @@
         state.stats.energy -= BB_ENERGY_COST;
         save();
         bbModalEl.classList.add("hidden");
+        bbInfiniteMode = false;
         bbReset();
         bbRender();
     });
 
-    // ---------- Обработчики выбора игры ----------
+    $("bbWinExit").addEventListener("click", () => {
+        bbWinModalEl.classList.add("hidden");
+        showGame();
+    });
+    $("bbWinRepeat").addEventListener("click", () => {
+        if (state.stats.energy < BB_ENERGY_COST) { alert(`Нужно ${BB_ENERGY_COST} энергии.`); return; }
+        state.stats.energy -= BB_ENERGY_COST;
+        save();
+        bbWinModalEl.classList.add("hidden");
+        bbInfiniteMode = false;
+        bbReset();
+        bbRender();
+    });
+    $("bbWinInfinite").addEventListener("click", () => {
+        if (state.stats.energy < BB_ENERGY_COST) { alert(`Нужно ${BB_ENERGY_COST} энергии.`); return; }
+        state.stats.energy -= BB_ENERGY_COST;
+        save();
+        bbWinModalEl.classList.add("hidden");
+        bbInfiniteMode = true;
+        bbReset();
+        bbRender();
+    });
 
-    $("chooseClicker").addEventListener("click", () => openMinigameIntro());
-    $("chooseBlock").addEventListener("click", () => openBbLevels());
-    $("chooseCancel").addEventListener("click", () => showGame());
+    // ---------- Таблица лидеров ----------
+
+    let lbTab = "easy";
+
+    $("chooseLeaderboard").addEventListener("click", () => {
+        hideAll();
+        leaderboardEl.classList.remove("hidden");
+        lbTab = "easy";
+        updateLbTabs();
+        loadLeaderboard();
+    });
+    $("leaderboardClose").addEventListener("click", () => openGameChooser());
+
+    document.querySelectorAll("[data-ltab]").forEach(t => {
+        t.addEventListener("click", () => {
+            lbTab = t.dataset.ltab;
+            updateLbTabs();
+            loadLeaderboard();
+        });
+    });
+    function updateLbTabs() {
+        document.querySelectorAll("[data-ltab]").forEach(t => {
+            t.classList.toggle("shop__tab--active", t.dataset.ltab === lbTab);
+        });
+    }
+
+    async function loadLeaderboard() {
+        const list = $("leaderboardList");
+        list.innerHTML = '<div class="shop-empty">Загрузка…</div>';
+        if (!isOnline()) {
+            list.innerHTML = '<div class="shop-empty">Открой через Telegram</div>';
+            return;
+        }
+        try {
+            const data = await apiFetch("/api/blockblast/leaderboard?level=" + lbTab);
+            list.innerHTML = "";
+            if (!data.leaderboard || data.leaderboard.length === 0) {
+                list.innerHTML = '<div class="shop-empty">Пока никого. Будь первым!</div>';
+                return;
+            }
+            for (const e of data.leaderboard) {
+                const row = document.createElement("div");
+                row.className = "lb-item";
+                if (e.is_me) row.classList.add("lb-item--me");
+                if (e.rank === 1) row.classList.add("lb-item--top1");
+                if (e.rank === 2) row.classList.add("lb-item--top2");
+                if (e.rank === 3) row.classList.add("lb-item--top3");
+                const medal = e.rank === 1 ? "🥇" : e.rank === 2 ? "🥈" : e.rank === 3 ? "🥉" : e.rank;
+                row.innerHTML = `
+                    <div class="lb-item__rank">${medal}</div>
+                    <div class="lb-item__info">
+                        <div class="lb-item__name">${e.pet_name}${e.is_me ? ' <span class="lb-item__you">(ты)</span>' : ""}</div>
+                    </div>
+                    <div class="lb-item__score">${e.score}</div>
+                `;
+                list.appendChild(row);
+            }
+            if (data.my_entry) {
+                const sep = document.createElement("div");
+                sep.className = "lb-separator";
+                list.appendChild(sep);
+                const row = document.createElement("div");
+                row.className = "lb-item lb-item--me";
+                row.innerHTML = `
+                    <div class="lb-item__rank">${data.my_entry.rank}</div>
+                    <div class="lb-item__info">
+                        <div class="lb-item__name">${data.my_entry.pet_name} <span class="lb-item__you">(ты)</span></div>
+                    </div>
+                    <div class="lb-item__score">${data.my_entry.score}</div>
+                `;
+                list.appendChild(row);
+            }
+        } catch (e) {
+            list.innerHTML = '<div class="shop-empty">Ошибка: ' + e.message + '</div>';
+        }
+    }
 
     // ---------- Сон ----------
 
@@ -1183,7 +1200,6 @@
         const list = adminListEl;
         list.innerHTML = "";
         adminCoinsEl.textContent = state.coins;
-
         document.querySelectorAll("[data-atab]").forEach(t => {
             t.classList.toggle("shop__tab--active", t.dataset.atab === adminTab);
         });
@@ -1192,23 +1208,17 @@
             for (const [id, item] of Object.entries(SHOP_ITEMS)) {
                 const owned = state.owned.includes(id);
                 const equipped = state.equipped === id;
-
                 const row = document.createElement("div");
                 row.className = "shop-item";
                 if (owned) row.classList.add("shop-item--owned");
                 if (equipped) row.classList.add("shop-item--equipped");
-
                 const preview = document.createElement("div");
                 preview.className = "shop-item__preview";
                 preview.textContent = item.emoji;
-
                 const info = document.createElement("div");
                 info.className = "shop-item__info";
-                info.innerHTML = `
-                    <div class="shop-item__name">${item.name}</div>
-                    <div class="shop-item__price">${id}${owned ? " · в инвентаре" : ""}</div>
-                `;
-
+                info.innerHTML = `<div class="shop-item__name">${item.name}</div>
+                    <div class="shop-item__price">${id}${owned ? " · в инвентаре" : ""}</div>`;
                 const btn = document.createElement("button");
                 btn.className = "shop-item__btn";
                 if (owned) {
@@ -1227,32 +1237,21 @@
                         save(); renderAdmin(); render();
                     });
                 }
-
-                row.appendChild(preview);
-                row.appendChild(info);
-                row.appendChild(btn);
+                row.appendChild(preview); row.appendChild(info); row.appendChild(btn);
                 list.appendChild(row);
             }
-        }
-
-        if (adminTab === "food") {
+        } else if (adminTab === "food") {
             for (const [id, food] of Object.entries(FOOD_ITEMS)) {
                 const count = state.food[id] || 0;
-
                 const row = document.createElement("div");
                 row.className = "shop-item";
-
                 const preview = document.createElement("div");
                 preview.className = "shop-item__preview";
                 preview.textContent = food.emoji;
-
                 const info = document.createElement("div");
                 info.className = "shop-item__info";
-                info.innerHTML = `
-                    <div class="shop-item__name">${food.name}</div>
-                    <div class="shop-item__price">сейчас: ${count}</div>
-                `;
-
+                info.innerHTML = `<div class="shop-item__name">${food.name}</div>
+                    <div class="shop-item__price">сейчас: ${count}</div>`;
                 const btn = document.createElement("button");
                 btn.className = "shop-item__btn shop-item__btn--equip";
                 btn.textContent = "+10";
@@ -1260,24 +1259,17 @@
                     state.food[id] = (state.food[id] || 0) + 10;
                     save(); renderAdmin();
                 });
-
-                row.appendChild(preview);
-                row.appendChild(info);
-                row.appendChild(btn);
+                row.appendChild(preview); row.appendChild(info); row.appendChild(btn);
                 list.appendChild(row);
             }
-        }
-
-        if (adminTab === "tools") {
+        } else if (adminTab === "tools") {
             const coinsRow = document.createElement("div");
             coinsRow.className = "shop-item";
-            coinsRow.innerHTML = `
-                <div class="shop-item__preview">💰</div>
+            coinsRow.innerHTML = `<div class="shop-item__preview">💰</div>
                 <div class="shop-item__info">
                     <div class="shop-item__name">Монеты</div>
                     <div class="shop-item__price">сейчас: ${state.coins}</div>
-                </div>
-            `;
+                </div>`;
             const coinsBtn = document.createElement("button");
             coinsBtn.className = "shop-item__btn shop-item__btn--equip";
             coinsBtn.textContent = "+100";
@@ -1288,34 +1280,13 @@
             coinsRow.appendChild(coinsBtn);
             list.appendChild(coinsRow);
 
-            const resetRow = document.createElement("div");
-            resetRow.className = "shop-item";
-            resetRow.innerHTML = `
-                <div class="shop-item__preview">♻️</div>
-                <div class="shop-item__info">
-                    <div class="shop-item__name">Сбросить статы</div>
-                    <div class="shop-item__price">Все статы = 100</div>
-                </div>
-            `;
-            const resetBtn = document.createElement("button");
-            resetBtn.className = "shop-item__btn shop-item__btn--equip";
-            resetBtn.textContent = "Сброс";
-            resetBtn.addEventListener("click", () => {
-                state.stats = { hunger: 100, happiness: 100, energy: 100, cleanliness: 100 };
-                save(); renderAdmin(); render();
-            });
-            resetRow.appendChild(resetBtn);
-            list.appendChild(resetRow);
-
             const nukeRow = document.createElement("div");
             nukeRow.className = "shop-item";
-            nukeRow.innerHTML = `
-                <div class="shop-item__preview">💥</div>
+            nukeRow.innerHTML = `<div class="shop-item__preview">💥</div>
                 <div class="shop-item__info">
                     <div class="shop-item__name">Полный сброс</div>
                     <div class="shop-item__price">Стереть всё локально</div>
-                </div>
-            `;
+                </div>`;
             const nukeBtn = document.createElement("button");
             nukeBtn.className = "shop-item__btn shop-item__btn--unequip";
             nukeBtn.textContent = "Стереть";
@@ -1338,26 +1309,19 @@
             renderAdmin();
         });
     }
-
     $("adminClose").addEventListener("click", () => showGame());
-
     document.querySelectorAll("[data-atab]").forEach(t => {
-        t.addEventListener("click", () => {
-            adminTab = t.dataset.atab;
-            renderAdmin();
-        });
+        t.addEventListener("click", () => { adminTab = t.dataset.atab; renderAdmin(); });
     });
 
     // ---------- Синк с сервером ----------
 
     async function syncFromServer() {
         if (!isOnline()) return;
-
         try {
             const me = await apiFetch("/api/me");
             state.coins = me.coins;
         } catch (e) { console.warn("me:", e); }
-
         try {
             const data = await apiFetch("/api/inventory/granted");
             for (const it of data.items) {
@@ -1365,7 +1329,6 @@
                 if (it.equipped && !state.equipped) state.equipped = it.item_id;
             }
         } catch (e) { console.warn("inv:", e); }
-
         save();
         render();
     }
