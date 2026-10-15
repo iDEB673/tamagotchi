@@ -16,6 +16,7 @@ VALID_LEVELS = ("easy", "normal", "hard")
 class ScoreRequest(BaseModel):
     level: str
     score: int
+    pet_name: str | None = None
 
 
 class LeaderboardEntry(BaseModel):
@@ -47,9 +48,17 @@ async def save_score(
         raise HTTPException(400, "Invalid score")
 
     # Достаём имя питомца
-    pet_result = await session.execute(select(Pet).where(Pet.user_id == user.id))
-    pet = pet_result.scalar_one_or_none()
-    pet_name = pet.name if pet else "Питомец"
+    if payload.pet_name:
+        pet_name = payload.pet_name[:20]
+        # Обновим имя в БД, чтобы впредь было актуально
+        pet_result = await session.execute(select(Pet).where(Pet.user_id == user.id))
+        pet = pet_result.scalar_one_or_none()
+        if pet:
+            pet.name = pet_name
+    else:
+        pet_result = await session.execute(select(Pet).where(Pet.user_id == user.id))
+        pet = pet_result.scalar_one_or_none()
+        pet_name = pet.name if pet else "Питомец"
 
     entry = BlockblastScore(
         user_id=user.id,
@@ -166,4 +175,132 @@ async def get_leaderboard(
         "level": level,
         "leaderboard": [e.model_dump() for e in leaderboard],
         "my_entry": my_entry.model_dump() if my_entry else None,
+    }
+# ---------- Кликер ----------
+
+from models import ClickerScore
+
+
+class ClickerScoreRequest(BaseModel):
+    score: int
+    pet_name: str | None = None
+
+
+@router.post("/clicker/score")
+async def save_clicker_score(
+    payload: ClickerScoreRequest,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    if payload.score < 0 or payload.score > 1000:
+        raise HTTPException(400, "Invalid score")
+
+    if payload.pet_name:
+        pet_name = payload.pet_name[:20]
+        pet_result = await session.execute(select(Pet).where(Pet.user_id == user.id))
+        pet = pet_result.scalar_one_or_none()
+        if pet:
+            pet.name = pet_name
+    else:
+        pet_result = await session.execute(select(Pet).where(Pet.user_id == user.id))
+        pet = pet_result.scalar_one_or_none()
+        pet_name = pet.name if pet else "Питомец"
+
+    entry = ClickerScore(
+        user_id=user.id,
+        score=payload.score,
+        pet_name=pet_name,
+    )
+    session.add(entry)
+    await session.commit()
+    return {"ok": True, "score": payload.score}
+
+
+@router.get("/clicker/leaderboard")
+async def get_clicker_leaderboard(
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    subq = (
+        select(
+            ClickerScore.user_id,
+            func.max(ClickerScore.score).label("best_score"),
+        )
+        .group_by(ClickerScore.user_id)
+        .subquery()
+    )
+
+    rows = (
+        await session.execute(
+            select(
+                ClickerScore.user_id,
+                ClickerScore.pet_name,
+                ClickerScore.score,
+                ClickerScore.created_at,
+                User.username,
+            )
+            .join(
+                subq,
+                (ClickerScore.user_id == subq.c.user_id)
+                & (ClickerScore.score == subq.c.best_score),
+            )
+            .join(User, User.id == ClickerScore.user_id)
+            .order_by(desc(ClickerScore.score), ClickerScore.created_at)
+            .limit(50)
+        )
+    ).all()
+
+    seen_users = set()
+    top = []
+    for r in rows:
+        if r.user_id in seen_users:
+            continue
+        seen_users.add(r.user_id)
+        top.append(r)
+        if len(top) >= 20:
+            break
+
+    leaderboard = []
+    my_rank = None
+    for i, r in enumerate(top, start=1):
+        entry = {
+            "rank": i,
+            "pet_name": r.pet_name,
+            "score": r.score,
+            "is_me": (r.user_id == user.id),
+        }
+        leaderboard.append(entry)
+        if entry["is_me"]:
+            my_rank = i
+
+    my_entry = None
+    if my_rank is None:
+        my_best = (
+            await session.execute(
+                select(func.max(ClickerScore.score)).where(ClickerScore.user_id == user.id)
+            )
+        ).scalar_one_or_none()
+
+        if my_best is not None:
+            better = (
+                await session.execute(
+                    select(func.count(func.distinct(subq.c.user_id)))
+                    .select_from(subq)
+                    .where(subq.c.best_score > my_best)
+                )
+            ).scalar_one()
+
+            pet_result = await session.execute(select(Pet).where(Pet.user_id == user.id))
+            pet = pet_result.scalar_one_or_none()
+
+            my_entry = {
+                "rank": better + 1,
+                "pet_name": pet.name if pet else "Питомец",
+                "score": my_best,
+                "is_me": True,
+            }
+
+    return {
+        "leaderboard": leaderboard,
+        "my_entry": my_entry,
     }

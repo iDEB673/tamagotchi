@@ -684,7 +684,7 @@
             try {
                 await apiFetch("/api/clicker/score", {
                     method: "POST",
-                    body: JSON.stringify({ score: mgScore }),
+                    body: JSON.stringify({ score: mgScore, pet_name: state.petName || "Питомец" }),
                 });
             } catch (e) { console.warn("clicker score save:", e); }
         } else state.coins += reward;
@@ -965,7 +965,11 @@
         try {
             await apiFetch("/api/blockblast/score", {
                 method: "POST",
-                body: JSON.stringify({ level: bbCurrentLevel, score: bbScore }),
+                body: JSON.stringify({
+                    level: bbCurrentLevel,
+                    score: bbScore,
+                    pet_name: state.petName || "Питомец",
+                }),
             });
         } catch (e) { console.warn("score save failed:", e); }
     }
