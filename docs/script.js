@@ -1,6 +1,11 @@
 (() => {
-    const tg = window.Telegram?.WebApp;
-    if (tg) { tg.ready(); tg.expand(); }
+    // ⚠️ ВСТАВЬ СВОЙ TG ID СЮДА
+    const ADMIN_ID = 5410929450;   // ← замени на свой
+
+    function isAdmin() {
+        const uid = tg?.initDataUnsafe?.user?.id;
+        return uid && uid === ADMIN_ID;
+    }
 
     function isOnline() {
         return !!(tg?.initData && tg.initData.length > 0);
@@ -228,6 +233,10 @@
     const petSpriteEl = $("petSprite");
     const petHatEl = $("petHat");
     const actionButtons = document.querySelectorAll(".action[data-action]");
+    const adminBtn = $("adminBtn");
+    const adminPanelEl = $("adminPanel");
+    const adminListEl = $("adminList");
+    const adminCoinsEl = $("adminCoins");
 
     const bars = {
         hunger: $("bar-hunger"), happiness: $("bar-happiness"),
@@ -290,6 +299,10 @@
         } else {
             petHatEl.classList.add("hidden");
             petHatEl.dataset.item = "";
+        }
+        
+        if (adminBtn) {
+            adminBtn.classList.toggle("hidden", !isAdmin());
         }
 
         actionButtons.forEach((btn) => { btn.disabled = sleeping; });
@@ -1141,7 +1154,7 @@
     $("sleepDeep").addEventListener("click", () => startSleep(SLEEP_DEEP_MS, SLEEP_DEEP_GAIN));
     $("sleepCancel").addEventListener("click", () => sleepModalEl.classList.add("hidden"));
 
-    // ---------- Синк с сервером ----------
+    
 
     async function syncFromServer() {
         if (!isOnline()) return;
