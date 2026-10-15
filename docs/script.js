@@ -1321,6 +1321,7 @@
                 list.appendChild(row);
             }
         } else if (adminTab === "tools") {
+            // ── Монеты ──
             const coinsRow = document.createElement("div");
             coinsRow.className = "shop-item";
             coinsRow.innerHTML = `<div class="shop-item__preview">💰</div>
@@ -1328,15 +1329,90 @@
                     <div class="shop-item__name">Монеты</div>
                     <div class="shop-item__price">сейчас: ${state.coins}</div>
                 </div>`;
-            const coinsBtn = document.createElement("button");
-            coinsBtn.className = "shop-item__btn shop-item__btn--equip";
-            coinsBtn.textContent = "+100";
-            coinsBtn.addEventListener("click", () => {
+            const coinsBtns = document.createElement("div");
+            coinsBtns.style.display = "flex";
+            coinsBtns.style.gap = "6px";
+            const coinsMinus = document.createElement("button");
+            coinsMinus.className = "shop-item__btn shop-item__btn--unequip";
+            coinsMinus.textContent = "−100";
+            coinsMinus.addEventListener("click", () => {
+                state.coins = Math.max(0, state.coins - 100);
+                save(); renderAdmin(); render();
+            });
+            const coinsPlus = document.createElement("button");
+            coinsPlus.className = "shop-item__btn shop-item__btn--equip";
+            coinsPlus.textContent = "+100";
+            coinsPlus.addEventListener("click", () => {
                 state.coins += 100;
                 save(); renderAdmin(); render();
             });
-            coinsRow.appendChild(coinsBtn);
+            coinsBtns.appendChild(coinsMinus);
+            coinsBtns.appendChild(coinsPlus);
+            coinsRow.appendChild(coinsBtns);
             list.appendChild(coinsRow);
+
+            // ── Статы ──
+            const statsHeader = document.createElement("div");
+            statsHeader.className = "shop-section";
+            statsHeader.textContent = "Статы";
+            list.appendChild(statsHeader);
+
+            const STAT_KEYS = [
+                { key: "hunger",      emoji: "🍖", name: "Голод" },
+                { key: "happiness",   emoji: "😊", name: "Радость" },
+                { key: "energy",      emoji: "⚡", name: "Энергия" },
+                { key: "cleanliness", emoji: "🧼", name: "Чистота" },
+            ];
+
+            for (const s of STAT_KEYS) {
+                const row = document.createElement("div");
+                row.className = "shop-item";
+                const val = Math.round(state.stats[s.key]);
+                row.innerHTML = `<div class="shop-item__preview">${s.emoji}</div>
+                    <div class="shop-item__info">
+                        <div class="shop-item__name">${s.name}</div>
+                        <div class="shop-item__price">сейчас: ${val}</div>
+                    </div>`;
+                const btns = document.createElement("div");
+                btns.style.display = "flex";
+                btns.style.gap = "6px";
+
+                const minus = document.createElement("button");
+                minus.className = "shop-item__btn shop-item__btn--unequip";
+                minus.textContent = "−10";
+                minus.addEventListener("click", () => {
+                    state.stats[s.key] = Math.max(0, state.stats[s.key] - 10);
+                    save(); renderAdmin(); render();
+                });
+
+                const reset = document.createElement("button");
+                reset.className = "shop-item__btn";
+                reset.textContent = "MAX";
+                reset.addEventListener("click", () => {
+                    state.stats[s.key] = 100;
+                    save(); renderAdmin(); render();
+                });
+
+                const plus = document.createElement("button");
+                plus.className = "shop-item__btn shop-item__btn--equip";
+                plus.textContent = "+10";
+                plus.addEventListener("click", () => {
+                    state.stats[s.key] = Math.min(100, state.stats[s.key] + 10);
+                    save(); renderAdmin(); render();
+                });
+
+                btns.appendChild(minus);
+                btns.appendChild(reset);
+                btns.appendChild(plus);
+                row.appendChild(btns);
+                list.appendChild(row);
+            }
+
+            // ── Полный сброс ──
+            const nukeHeader = document.createElement("div");
+            nukeHeader.className = "shop-section";
+            nukeHeader.textContent = "Сброс";
+            list.appendChild(nukeHeader);
 
             const nukeRow = document.createElement("div");
             nukeRow.className = "shop-item";
