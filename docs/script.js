@@ -1,10 +1,30 @@
 (() => {
-    // ⚠️ ВСТАВЬ СВОЙ TG ID СЮДА
-    const ADMIN_ID = 5410929450;   // ← замени на свой
+    const tg = window.Telegram?.WebApp;
+    if (tg) { tg.ready(); tg.expand(); }
+
+    const ADMIN_ID = 5410929450;
+
+    function getMyUserId() {
+        // Пробуем initDataUnsafe
+        const unsafeId = tg?.initDataUnsafe?.user?.id;
+        if (unsafeId) return parseInt(unsafeId, 10);
+
+        // Парсим initData вручную
+        const initData = tg?.initData;
+        if (!initData) return null;
+        try {
+            const params = new URLSearchParams(initData);
+            const userStr = params.get("user");
+            if (!userStr) return null;
+            const user = JSON.parse(userStr);
+            return user.id ? parseInt(user.id, 10) : null;
+        } catch (e) {
+            return null;
+        }
+    }
 
     function isAdmin() {
-        const uid = tg?.initDataUnsafe?.user?.id;
-        return uid && uid === ADMIN_ID;
+        return getMyUserId() === ADMIN_ID;
     }
 
     function isOnline() {
@@ -223,6 +243,7 @@
     const bbExitModalEl = $("bbExitModal");
     const feedModalEl = $("feedModal");
     const sleepModalEl = $("sleepModal");
+    const adminPanelEl = $("adminPanel");
     const sleepBannerEl = $("sleepBanner");
     const sleepTimerEl = $("sleepTimer");
     const nameInput = $("nameInput");
@@ -230,13 +251,12 @@
     const petNameEl = $("petName");
     const coinsEl = $("coins");
     const shopCoinsEl = $("shopCoins");
+    const adminCoinsEl = $("adminCoins");
+    const adminBtn = $("adminBtn");
+    const adminListEl = $("adminList");
     const petSpriteEl = $("petSprite");
     const petHatEl = $("petHat");
     const actionButtons = document.querySelectorAll(".action[data-action]");
-    const adminBtn = $("adminBtn");
-    const adminPanelEl = $("adminPanel");
-    const adminListEl = $("adminList");
-    const adminCoinsEl = $("adminCoins");
 
     const bars = {
         hunger: $("bar-hunger"), happiness: $("bar-happiness"),
@@ -250,7 +270,7 @@
     function hideAll() {
         if (typeof bbCleanupGhosts === "function") bbCleanupGhosts();
         [onboardingEl, gameEl, shopEl, chooserEl, bbLevelsEl, introEl, minigameEl, bbEl,
-         sleepModalEl, mgModalEl, bbModalEl, bbExitModalEl, feedModalEl]
+         sleepModalEl, mgModalEl, bbModalEl, bbExitModalEl, feedModalEl, adminPanelEl]
             .forEach(el => el && el.classList.add("hidden"));
     }
 
@@ -260,6 +280,7 @@
         petNameEl.textContent = state.petName || "Питомец";
         coinsEl.textContent = state.coins;
         if (shopCoinsEl) shopCoinsEl.textContent = state.coins;
+        if (adminCoinsEl) adminCoinsEl.textContent = state.coins;
 
         for (const key of Object.keys(bars)) {
             const value = Math.max(0, Math.min(100, Math.round(state.stats[key])));
@@ -300,7 +321,7 @@
             petHatEl.classList.add("hidden");
             petHatEl.dataset.item = "";
         }
-        
+
         if (adminBtn) {
             adminBtn.classList.toggle("hidden", !isAdmin());
         }
@@ -391,7 +412,7 @@
 
     $("shopClose").addEventListener("click", () => showGame());
 
-    document.querySelectorAll(".shop__tab").forEach(tab => {
+    document.querySelectorAll(".shop__tab[data-tab]").forEach(tab => {
         tab.addEventListener("click", () => {
             shopTab = tab.dataset.tab;
             updateShopTabs();
@@ -400,7 +421,7 @@
     });
 
     function updateShopTabs() {
-        document.querySelectorAll(".shop__tab").forEach(t => {
+        document.querySelectorAll(".shop__tab[data-tab]").forEach(t => {
             t.classList.toggle("shop__tab--active", t.dataset.tab === shopTab);
         });
     }
@@ -1154,7 +1175,184 @@
     $("sleepDeep").addEventListener("click", () => startSleep(SLEEP_DEEP_MS, SLEEP_DEEP_GAIN));
     $("sleepCancel").addEventListener("click", () => sleepModalEl.classList.add("hidden"));
 
-    
+    // ---------- Админ-панель ----------
+
+    let adminTab = "items";
+
+    function renderAdmin() {
+        const list = adminListEl;
+        list.innerHTML = "";
+        adminCoinsEl.textContent = state.coins;
+
+        document.querySelectorAll("[data-atab]").forEach(t => {
+            t.classList.toggle("shop__tab--active", t.dataset.atab === adminTab);
+        });
+
+        if (adminTab === "items") {
+            for (const [id, item] of Object.entries(SHOP_ITEMS)) {
+                const owned = state.owned.includes(id);
+                const equipped = state.equipped === id;
+
+                const row = document.createElement("div");
+                row.className = "shop-item";
+                if (owned) row.classList.add("shop-item--owned");
+                if (equipped) row.classList.add("shop-item--equipped");
+
+                const preview = document.createElement("div");
+                preview.className = "shop-item__preview";
+                preview.textContent = item.emoji;
+
+                const info = document.createElement("div");
+                info.className = "shop-item__info";
+                info.innerHTML = `
+                    <div class="shop-item__name">${item.name}</div>
+                    <div class="shop-item__price">${id}${owned ? " · в инвентаре" : ""}</div>
+                `;
+
+                const btn = document.createElement("button");
+                btn.className = "shop-item__btn";
+                if (owned) {
+                    btn.textContent = "Забрать";
+                    btn.classList.add("shop-item__btn--unequip");
+                    btn.addEventListener("click", () => {
+                        state.owned = state.owned.filter(x => x !== id);
+                        if (state.equipped === id) state.equipped = null;
+                        save(); renderAdmin(); render();
+                    });
+                } else {
+                    btn.textContent = "Выдать";
+                    btn.classList.add("shop-item__btn--equip");
+                    btn.addEventListener("click", () => {
+                        if (!state.owned.includes(id)) state.owned.push(id);
+                        save(); renderAdmin(); render();
+                    });
+                }
+
+                row.appendChild(preview);
+                row.appendChild(info);
+                row.appendChild(btn);
+                list.appendChild(row);
+            }
+        }
+
+        if (adminTab === "food") {
+            for (const [id, food] of Object.entries(FOOD_ITEMS)) {
+                const count = state.food[id] || 0;
+
+                const row = document.createElement("div");
+                row.className = "shop-item";
+
+                const preview = document.createElement("div");
+                preview.className = "shop-item__preview";
+                preview.textContent = food.emoji;
+
+                const info = document.createElement("div");
+                info.className = "shop-item__info";
+                info.innerHTML = `
+                    <div class="shop-item__name">${food.name}</div>
+                    <div class="shop-item__price">сейчас: ${count}</div>
+                `;
+
+                const btn = document.createElement("button");
+                btn.className = "shop-item__btn shop-item__btn--equip";
+                btn.textContent = "+10";
+                btn.addEventListener("click", () => {
+                    state.food[id] = (state.food[id] || 0) + 10;
+                    save(); renderAdmin();
+                });
+
+                row.appendChild(preview);
+                row.appendChild(info);
+                row.appendChild(btn);
+                list.appendChild(row);
+            }
+        }
+
+        if (adminTab === "tools") {
+            const coinsRow = document.createElement("div");
+            coinsRow.className = "shop-item";
+            coinsRow.innerHTML = `
+                <div class="shop-item__preview">💰</div>
+                <div class="shop-item__info">
+                    <div class="shop-item__name">Монеты</div>
+                    <div class="shop-item__price">сейчас: ${state.coins}</div>
+                </div>
+            `;
+            const coinsBtn = document.createElement("button");
+            coinsBtn.className = "shop-item__btn shop-item__btn--equip";
+            coinsBtn.textContent = "+100";
+            coinsBtn.addEventListener("click", () => {
+                state.coins += 100;
+                save(); renderAdmin(); render();
+            });
+            coinsRow.appendChild(coinsBtn);
+            list.appendChild(coinsRow);
+
+            const resetRow = document.createElement("div");
+            resetRow.className = "shop-item";
+            resetRow.innerHTML = `
+                <div class="shop-item__preview">♻️</div>
+                <div class="shop-item__info">
+                    <div class="shop-item__name">Сбросить статы</div>
+                    <div class="shop-item__price">Все статы = 100</div>
+                </div>
+            `;
+            const resetBtn = document.createElement("button");
+            resetBtn.className = "shop-item__btn shop-item__btn--equip";
+            resetBtn.textContent = "Сброс";
+            resetBtn.addEventListener("click", () => {
+                state.stats = { hunger: 100, happiness: 100, energy: 100, cleanliness: 100 };
+                save(); renderAdmin(); render();
+            });
+            resetRow.appendChild(resetBtn);
+            list.appendChild(resetRow);
+
+            const nukeRow = document.createElement("div");
+            nukeRow.className = "shop-item";
+            nukeRow.innerHTML = `
+                <div class="shop-item__preview">💥</div>
+                <div class="shop-item__info">
+                    <div class="shop-item__name">Полный сброс</div>
+                    <div class="shop-item__price">Стереть всё локально</div>
+                </div>
+            `;
+            const nukeBtn = document.createElement("button");
+            nukeBtn.className = "shop-item__btn shop-item__btn--unequip";
+            nukeBtn.textContent = "Стереть";
+            nukeBtn.addEventListener("click", () => {
+                if (confirm("Точно стереть всё?")) {
+                    localStorage.removeItem(STORAGE_KEY);
+                    location.reload();
+                }
+            });
+            nukeRow.appendChild(nukeBtn);
+            list.appendChild(nukeRow);
+        }
+    }
+
+    if (adminBtn) {
+        adminBtn.addEventListener("click", () => {
+            const uid = getMyUserId();
+            if (uid !== ADMIN_ID) {
+                alert(`Не админ\n\nТвой ID: ${uid}\nADMIN_ID: ${ADMIN_ID}\n\nЕсли ID верный — значит Telegram не передаёт данные`);
+                return;
+            }
+            hideAll();
+            adminPanelEl.classList.remove("hidden");
+            renderAdmin();
+        });
+    }
+
+    $("adminClose").addEventListener("click", () => showGame());
+
+    document.querySelectorAll("[data-atab]").forEach(t => {
+        t.addEventListener("click", () => {
+            adminTab = t.dataset.atab;
+            renderAdmin();
+        });
+    });
+
+    // ---------- Синк с сервером ----------
 
     async function syncFromServer() {
         if (!isOnline()) return;
