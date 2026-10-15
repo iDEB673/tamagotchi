@@ -27,41 +27,21 @@
             <div class="header__name" id="petName">Питомец</div>
             <div class="header__coins">💰 <span id="coins">100</span></div>
         </header>
-
         <div class="stats">
-            <div class="stat">
-                <div class="stat__icon">🍖</div>
-                <div class="stat__bar"><div class="stat__fill" id="bar-hunger"></div></div>
-                <div class="stat__num" id="num-hunger">100</div>
-            </div>
-            <div class="stat">
-                <div class="stat__icon">😊</div>
-                <div class="stat__bar"><div class="stat__fill" id="bar-happiness"></div></div>
-                <div class="stat__num" id="num-happiness">100</div>
-            </div>
-            <div class="stat">
-                <div class="stat__icon">⚡</div>
-                <div class="stat__bar"><div class="stat__fill" id="bar-energy"></div></div>
-                <div class="stat__num" id="num-energy">100</div>
-            </div>
-            <div class="stat">
-                <div class="stat__icon">🧼</div>
-                <div class="stat__bar"><div class="stat__fill" id="bar-cleanliness"></div></div>
-                <div class="stat__num" id="num-cleanliness">100</div>
-            </div>
+            <div class="stat"><div class="stat__icon">🍖</div><div class="stat__bar"><div class="stat__fill" id="bar-hunger"></div></div><div class="stat__num" id="num-hunger">100</div></div>
+            <div class="stat"><div class="stat__icon">😊</div><div class="stat__bar"><div class="stat__fill" id="bar-happiness"></div></div><div class="stat__num" id="num-happiness">100</div></div>
+            <div class="stat"><div class="stat__icon">⚡</div><div class="stat__bar"><div class="stat__fill" id="bar-energy"></div></div><div class="stat__num" id="num-energy">100</div></div>
+            <div class="stat"><div class="stat__icon">🧼</div><div class="stat__bar"><div class="stat__fill" id="bar-cleanliness"></div></div><div class="stat__num" id="num-cleanliness">100</div></div>
         </div>
-
         <div class="pet">
             <div class="pet__stack">
                 <img id="petSprite" class="pet__sprite" src="public/sprites/idle.png" alt="Питомец">
                 <img id="petHat" class="pet__hat hidden" alt="">
             </div>
         </div>
-
         <div id="sleepBanner" class="sleep-banner hidden">
             <div class="sleep-banner__text">😴 Спит · <span id="sleepTimer">05:00</span></div>
         </div>
-
         <div class="actions">
             <button class="action" data-action="feed">🍖<span>Покормить</span></button>
             <button class="action" data-action="play">🎮<span>Играть</span></button>
@@ -82,9 +62,7 @@
             <button class="shop__tab" data-tab="food">🍔 Еда</button>
         </div>
         <div class="shop__list" id="shopList"></div>
-        <div class="actions">
-            <button class="action action--wide" id="shopClose">← Назад</button>
-        </div>
+        <div class="actions"><button class="action action--wide" id="shopClose">← Назад</button></div>
     </div>
 
     <!-- Модалка кормления -->
@@ -118,10 +96,45 @@
                 <div class="game-choice__emoji">🧩</div>
                 <div class="game-choice__text">
                     <div class="game-choice__title">Block Blast</div>
-                    <div class="game-choice__sub">собирай линии · −15 ⚡ · до +20 💰</div>
+                    <div class="game-choice__sub">3 уровня сложности · 15 ⚡</div>
                 </div>
             </button>
             <button id="chooseCancel" class="onboarding__button onboarding__button--secondary">Выйти</button>
+        </div>
+    </div>
+
+    <!-- Выбор сложности -->
+    <div id="bbLevels" class="screen onboarding hidden">
+        <div class="onboarding__content">
+            <div class="onboarding__emoji">🧩</div>
+            <h1 class="onboarding__title">Сложность</h1>
+            <p class="onboarding__text">Стоимость входа: <b>15 ⚡</b></p>
+
+            <button class="level-btn level-btn--easy" data-level="easy">
+                <div class="level-btn__emoji">🟢</div>
+                <div class="level-btn__text">
+                    <div class="level-btn__title">Лёгкий</div>
+                    <div class="level-btn__sub">Поле 6×6 · до +15 💰</div>
+                </div>
+            </button>
+
+            <button class="level-btn level-btn--normal" data-level="normal">
+                <div class="level-btn__emoji">🟡</div>
+                <div class="level-btn__text">
+                    <div class="level-btn__title">Средний</div>
+                    <div class="level-btn__sub">Поле 8×8 · до +40 💰</div>
+                </div>
+            </button>
+
+            <button class="level-btn level-btn--hard" data-level="hard">
+                <div class="level-btn__emoji">🔴</div>
+                <div class="level-btn__text">
+                    <div class="level-btn__title">Сложный</div>
+                    <div class="level-btn__sub">Поле 10×10 · до +75 💰</div>
+                </div>
+            </button>
+
+            <button id="bbLevelsCancel" class="onboarding__button onboarding__button--secondary">← Назад</button>
         </div>
     </div>
 
@@ -164,7 +177,7 @@
     <!-- Block Blast -->
     <div id="blockblast" class="screen blockblast hidden">
         <header class="header">
-            <div class="header__name">Block Blast</div>
+            <div class="header__name">Block Blast <span id="bbLevelIcon">🟢</span></div>
             <div class="header__energy">🎯 <span id="bbScore">0</span> · ⚡ <span id="bbEnergy">100</span></div>
         </header>
         <div class="bb-grid" id="bbGrid"></div>
@@ -180,6 +193,17 @@
                 <div class="mg-modal__buttons">
                     <button id="bbResultBack" class="mg-modal__btn">Вернуться</button>
                     <button id="bbResultRepeat" class="mg-modal__btn mg-modal__btn--primary">Повторить</button>
+                </div>
+            </div>
+        </div>
+        <div id="bbExitModal" class="mg-modal hidden">
+            <div class="mg-modal__content">
+                <h2 class="mg-modal__title">Выйти?</h2>
+                <div class="mg-modal__reward" id="bbExitReward">+5 💰</div>
+                <p class="mg-modal__sub" id="bbExitSub">Счёт: 120</p>
+                <div class="mg-modal__buttons">
+                    <button id="bbExitNo" class="mg-modal__btn">Нет</button>
+                    <button id="bbExitYes" class="mg-modal__btn mg-modal__btn--primary">Да, выйти</button>
                 </div>
             </div>
         </div>
