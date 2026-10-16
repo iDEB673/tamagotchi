@@ -212,7 +212,12 @@
         }
         btns.forEach(btn => {
             const n = parseInt(btn.dataset.n, 10);
-            if (!isNaN(n) && counts[n] >= 9) {
+            if (isNaN(n)) return;
+            const left = Math.max(0, 9 - counts[n]);
+            const leftEl = btn.querySelector(".sd-num__left");
+            if (leftEl) leftEl.textContent = left;
+
+            if (left === 0) {
                 btn.classList.add("sd-num--done");
                 btn.disabled = true;
             } else {
@@ -234,7 +239,7 @@
             const btn = document.createElement("button");
             btn.className = "sd-num";
             btn.dataset.n = n;
-            btn.textContent = n;
+            btn.innerHTML = `<span class="sd-num__digit">${n}</span><span class="sd-num__left" data-left="${n}">9</span>`;
             btn.addEventListener("click", () => sdNumpadClick(n));
             np.appendChild(btn);
         }
@@ -272,11 +277,40 @@
         }
     }
 
+    function sdCanAddNote(r, c, n) {
+        for (let i = 0; i < 9; i++) {
+            if (i !== c && sdUserGrid[r][i] === n) return false;
+            if (i !== r && sdUserGrid[i][c] === n) return false;
+        }
+        const br = Math.floor(r / 3) * 3, bc = Math.floor(c / 3) * 3;
+        for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) {
+            const rr = br + i, cc = bc + j;
+            if ((rr !== r || cc !== c) && sdUserGrid[rr][cc] === n) return false;
+        }
+        return true;
+    }
+
+    function sdRemoveNoteFromCrosshair(r, c, n) {
+        for (let i = 0; i < 9; i++) {
+            sdNotes[r][i].delete(n);
+            sdNotes[i][c].delete(n);
+        }
+        const br = Math.floor(r / 3) * 3, bc = Math.floor(c / 3) * 3;
+        for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) {
+            sdNotes[br + i][bc + j].delete(n);
+        }
+    }
+
     function sdInsertNum(r, c, n) {
         if (!sdActive) return;
         if (sdPuzzle[r][c] !== 0) return;
 
+        // Режим заметок
         if (sdNotesMode && n !== 0) {
+            if (!sdCanAddNote(r, c, n)) {
+                App.hapticNotify("warning");
+                return;
+            }
             sdHistory.push({ r, c, prev: sdUserGrid[r][c], prevNotes: new Set(sdNotes[r][c]) });
             if (sdNotes[r][c].has(n)) sdNotes[r][c].delete(n);
             else sdNotes[r][c].add(n);
@@ -289,22 +323,43 @@
 
         if (n === 0) {
             sdUserGrid[r][c] = 0;
-        } else {
+            sdRender();
+            return;
+        }
+
+        // Конфликт — красная вспышка, потом убираем
+        if (sdIsConflict(r, c, n)) {
+            App.hapticNotify("error");
             sdUserGrid[r][c] = n;
-            if (sdIsConflict(r, c, n)) {
+            sdRender();
+
+            // Найти ячейку и подсветить
+            setTimeout(() => {
+                if (!sdActive) return;
+                sdUserGrid[r][c] = 0;
+                sdNotes[r][c] = sdHistory[sdHistory.length - 1].prevNotes;
+                sdHistory.pop();
                 sdMistakes++;
                 if (sdMistakes >= SD_LEVELS[sdCurrentLevel].maxMistakes) {
                     sdRender();
                     sdLose();
                     return;
                 }
-            } else if (sdIsSolved()) {
                 sdRender();
-                sdWin();
-                return;
-            }
+            }, 500);
+            return;
         }
+
+        // Успех
+        sdUserGrid[r][c] = n;
+        sdRemoveNoteFromCrosshair(r, c, n);
         App.hapticImpact("light");
+
+        if (sdIsSolved()) {
+            sdRender();
+            sdWin();
+            return;
+        }
         sdRender();
     }
 
