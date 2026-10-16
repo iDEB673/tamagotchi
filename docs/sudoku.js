@@ -81,6 +81,9 @@
     let sdSelectedNum = null;
     let sdInputMode = "cell-first";
     let sdMistakes = 0, sdNotesMode = false, sdHistory = [], sdActive = false;
+    let sdStartTime = 0;
+    let sdTickerId = null;
+    let sdElapsed = 0;
 
     const $ = (id) => document.getElementById(id);
 
@@ -363,6 +366,32 @@
         sdRender();
     }
 
+    function sdFormatTime(sec) {
+        const m = Math.floor(sec / 60);
+        const s = sec % 60;
+        return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+    }
+
+    function sdStartTimer() {
+        sdStartTime = Date.now();
+        sdElapsed = 0;
+        if (sdTickerId) clearInterval(sdTickerId);
+        sdTickerId = setInterval(() => {
+            if (!sdActive) return;
+            sdElapsed = Math.floor((Date.now() - sdStartTime) / 1000);
+            const el = $("sdTimer");
+            if (el) el.textContent = sdFormatTime(sdElapsed);
+        }, 250);
+    }
+
+    function sdStopTimer() {
+        if (sdTickerId) { clearInterval(sdTickerId); sdTickerId = null; }
+        if (sdStartTime) {
+            sdElapsed = Math.floor((Date.now() - sdStartTime) / 1000);
+        }
+        return sdElapsed;
+    }
+
     async function sdStart(levelKey) {
         try {
             if (!App) return;
@@ -394,6 +423,9 @@
             $("sudoku").classList.remove("hidden");
             const modeBtn = $("sdMode");
             if (modeBtn) modeBtn.textContent = sdInputMode === "cell-first" ? "🎯 Клетка" : "🔢 Цифра";
+            const timerEl = $("sdTimer");
+            if (timerEl) timerEl.textContent = "00:00";
+            sdStartTimer();
             sdRender();
         } catch (e) {
             console.error("sdStart error:", e);
@@ -403,6 +435,7 @@
 
     function sdWin() {
         sdActive = false;
+        const time = sdStopTimer();
         const cfg = SD_LEVELS[sdCurrentLevel];
         const reward = cfg.reward;
         const state = App.getState();
@@ -415,17 +448,27 @@
                 method: "POST",
                 body: JSON.stringify({ game: "sudoku", score: cfg.code }),
             }).then(res => { state.coins = res.coins; App.save(); }).catch(() => {});
+
+            App.apiFetch("/api/sudoku/score", {
+                method: "POST",
+                body: JSON.stringify({
+                    level: sdCurrentLevel,
+                    time_seconds: time,
+                    pet_name: state.petName || "Питомец",
+                }),
+            }).catch(e => console.warn("sudoku score save:", e));
         }
 
         $("sdModalTitle").textContent = "🎉 Решено!";
         $("sdModalReward").textContent = `+${reward} 💰`;
         $("sdModalReward").classList.remove("loss");
-        $("sdModalSub").textContent = `Ошибок: ${sdMistakes}`;
+        $("sdModalSub").textContent = `Время: ${sdFormatTime(time)} · Ошибок: ${sdMistakes}`;
         $("sdModal").classList.remove("hidden");
     }
 
     function sdLose() {
         sdActive = false;
+        sdStopTimer();
         App.hapticNotify("error");
         $("sdModalTitle").textContent = "😔 Проигрыш";
         $("sdModalReward").textContent = `Ошибок: ${sdMistakes}`;
@@ -453,6 +496,7 @@
             if (!sdActive) { App.openGameChooser(); return; }
             if (confirm("Выйти? Прогресс этой партии потеряется.")) {
                 sdActive = false;
+                sdStopTimer();
                 App.openGameChooser();
             }
         });

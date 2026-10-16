@@ -15,7 +15,7 @@ if sys.platform == "win32":
 # --- мои импорты ---
 from core.config import settings
 from core.db import Base
-from models import clicker_score, inventory, pet, score, user  # noqa: F401
+from models import clicker_score, inventory, pet, score, sudoku_score, user  # noqa: F401
 
 config = context.config
 

@@ -304,3 +304,147 @@ async def get_clicker_leaderboard(
         "leaderboard": leaderboard,
         "my_entry": my_entry,
     }
+
+# ---------- Судоку ----------
+
+from models import SudokuScore
+
+
+class SudokuScoreRequest(BaseModel):
+    level: str
+    time_seconds: int
+    pet_name: str | None = None
+
+
+@router.post("/sudoku/score")
+async def save_sudoku_score(
+    payload: SudokuScoreRequest,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    if payload.level not in ("easy", "normal", "hard"):
+        raise HTTPException(400, "Invalid level")
+    if payload.time_seconds <= 0 or payload.time_seconds > 100000:
+        raise HTTPException(400, "Invalid time")
+
+    if payload.pet_name:
+        pet_name = payload.pet_name[:20]
+        pet_result = await session.execute(select(Pet).where(Pet.user_id == user.id))
+        pet = pet_result.scalar_one_or_none()
+        if pet:
+            pet.name = pet_name
+    else:
+        pet_result = await session.execute(select(Pet).where(Pet.user_id == user.id))
+        pet = pet_result.scalar_one_or_none()
+        pet_name = pet.name if pet else "Питомец"
+
+    entry = SudokuScore(
+        user_id=user.id,
+        level=payload.level,
+        time_seconds=payload.time_seconds,
+        pet_name=pet_name,
+    )
+    session.add(entry)
+    await session.commit()
+    return {"ok": True, "time_seconds": payload.time_seconds}
+
+
+@router.get("/sudoku/leaderboard")
+async def get_sudoku_leaderboard(
+    level: str = "easy",
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    if level not in ("easy", "normal", "hard"):
+        raise HTTPException(400, "Invalid level")
+
+    # Лучшее (минимальное) время каждого юзера
+    subq = (
+        select(
+            SudokuScore.user_id,
+            func.min(SudokuScore.time_seconds).label("best_time"),
+        )
+        .where(SudokuScore.level == level)
+        .group_by(SudokuScore.user_id)
+        .subquery()
+    )
+
+    rows = (
+        await session.execute(
+            select(
+                SudokuScore.user_id,
+                SudokuScore.pet_name,
+                SudokuScore.time_seconds,
+                SudokuScore.created_at,
+                User.username,
+            )
+            .join(
+                subq,
+                (SudokuScore.user_id == subq.c.user_id)
+                & (SudokuScore.time_seconds == subq.c.best_time),
+            )
+            .join(User, User.id == SudokuScore.user_id)
+            .where(SudokuScore.level == level)
+            .order_by(SudokuScore.time_seconds, SudokuScore.created_at)
+            .limit(50)
+        )
+    ).all()
+
+    seen = set()
+    top = []
+    for r in rows:
+        if r.user_id in seen:
+            continue
+        seen.add(r.user_id)
+        top.append(r)
+        if len(top) >= 20:
+            break
+
+    leaderboard = []
+    my_rank = None
+    for i, r in enumerate(top, start=1):
+        entry = {
+            "rank": i,
+            "pet_name": r.pet_name,
+            "score": r.time_seconds,
+            "is_me": (r.user_id == user.id),
+        }
+        leaderboard.append(entry)
+        if entry["is_me"]:
+            my_rank = i
+
+    my_entry = None
+    if my_rank is None:
+        my_best = (
+            await session.execute(
+                select(func.min(SudokuScore.time_seconds)).where(
+                    SudokuScore.level == level,
+                    SudokuScore.user_id == user.id,
+                )
+            )
+        ).scalar_one_or_none()
+
+        if my_best is not None:
+            better = (
+                await session.execute(
+                    select(func.count(func.distinct(subq.c.user_id)))
+                    .select_from(subq)
+                    .where(subq.c.best_time < my_best)
+                )
+            ).scalar_one()
+
+            pet_result = await session.execute(select(Pet).where(Pet.user_id == user.id))
+            pet = pet_result.scalar_one_or_none()
+
+            my_entry = {
+                "rank": better + 1,
+                "pet_name": pet.name if pet else "Питомец",
+                "score": my_best,
+                "is_me": True,
+            }
+
+    return {
+        "level": level,
+        "leaderboard": leaderboard,
+        "my_entry": my_entry,
+    }
