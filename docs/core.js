@@ -65,6 +65,9 @@
         stats: { hunger: 100, happiness: 100, energy: 100, cleanliness: 100 },
         lastUpdate: Date.now(), gamesPlayed: 0,
         sleepUntil: null, sleepGain: 0, sleepStartedAt: null,
+        nightSleepStart: null,
+        nightSleepWake: null,
+        nightSleepEnergyBefore: 0,
         owned: [], equipped: null, food: {},
     });
 
@@ -105,14 +108,36 @@
         return mins;
     }
     function checkSleepOnLoad() {
-        if (!state.sleepUntil) return;
-        if (Date.now() >= state.sleepUntil) {
+        // Обычный сон
+        if (state.sleepUntil && Date.now() >= state.sleepUntil) {
             const gain = state.sleepGain || 0;
             state.stats.energy = Math.max(0, Math.min(100, state.stats.energy + Math.round(gain * 100)));
             applySleepDecay();
             state.sleepUntil = null; state.sleepGain = 0;
             save();
         }
+        // Ночной сон — если wake-время наступило, питомец проснулся сам
+        if (state.nightSleepStart && state.nightSleepWake) {
+            const now = Date.now();
+            if (now >= state.nightSleepWake) {
+                const hours = (state.nightSleepWake - state.nightSleepStart) / 3600000;
+                finishNightSleep(hours);
+            }
+        }
+    }
+
+    function finishNightSleep(hours) {
+        const before = state.nightSleepEnergyBefore || 0;
+        const restored = Math.min(100, Math.round(before + hours * 30));
+        state.stats.energy = restored;
+        // Медленный расход за время сна
+        state.stats.hunger = Math.max(0, state.stats.hunger - hours * 0.5);
+        state.stats.cleanliness = Math.max(0, state.stats.cleanliness - hours * 0.5);
+        state.stats.happiness = Math.max(0, state.stats.happiness - hours * 0.5);
+        state.nightSleepStart = null;
+        state.nightSleepWake = null;
+        state.nightSleepEnergyBefore = 0;
+        save();
     }
 
     const $ = (id) => document.getElementById(id);
@@ -159,9 +184,40 @@
         energy: $("num-energy"), cleanliness: $("num-cleanliness"),
     };
 
-    function isSleeping() { return state.sleepUntil && Date.now() < state.sleepUntil; }
+    function isSleeping() {
+        if (state.nightSleepStart && state.nightSleepWake) {
+            return Date.now() < state.nightSleepWake;
+        }
+        return state.sleepUntil && Date.now() < state.sleepUntil;
+    }
+    function isNightSleep() {
+        return !!(state.nightSleepStart && state.nightSleepWake && Date.now() < state.nightSleepWake);
+    }
+    function canStartNightSleep() {
+        const h = new Date().getHours();
+        return h >= 22 || h < 1;
+    }
+
+    function tryWakeUp() {
+        if (!state.nightSleepStart) return;
+        const now = Date.now();
+        const hours = (now - state.nightSleepStart) / 3600000;
+        if (hours < 1) {
+            const left = Math.ceil(60 - hours * 60);
+            alert(`Пусть поспит ещё ${left} мин — минимум 1 час сна`);
+            return;
+        }
+        if (!confirm("Разбудить? Энергия восстановится частично.")) return;
+        finishNightSleep(hours);
+        render();
+        if (tg) tg.HapticFeedback?.notificationOccurred("success");
+    }
 
     function render() {
+        const hour = new Date().getHours();
+        const night = hour >= 22 || hour < 8;
+        document.body.classList.toggle("night-mode", night || isNightSleep());
+
         petNameEl.textContent = state.petName || "Питомец";
         coinsEl.textContent = state.coins;
         if (shopCoinsEl) shopCoinsEl.textContent = state.coins;
@@ -188,6 +244,19 @@
         if (sleeping) {
             sleepBannerEl.classList.remove("hidden");
             petSpriteEl.src = `public/sprites/sleeping.png`;
+            const banner = sleepBannerEl.querySelector(".sleep-banner__text");
+            if (banner) {
+                if (isNightSleep()) {
+                    const wakeAt = new Date(state.nightSleepWake);
+                    const hh = String(wakeAt.getHours()).padStart(2, "0");
+                    const mm = String(wakeAt.getMinutes()).padStart(2, "0");
+                    banner.innerHTML = `🌙 Ночной сон · до ${hh}:${mm} · <span id="wakeBtn" style="color:#5288c1;text-decoration:underline;cursor:pointer;">Разбудить</span>`;
+                    const wakeBtn = $("wakeBtn");
+                    if (wakeBtn) wakeBtn.addEventListener("click", tryWakeUp);
+                } else {
+                    banner.textContent = "😴 Спит · " + sleepTimerEl.textContent;
+                }
+            }
         } else {
             sleepBannerEl.classList.add("hidden");
             let sprite = "idle";
@@ -522,7 +591,21 @@
 
     function openSleepModal() {
         if (isSleeping()) return;
+        // Показываем/скрываем кнопку ночного сна по времени
+        const btn = $("sleepNight");
+        if (btn) btn.style.display = canStartNightSleep() ? "block" : "none";
         sleepModalEl.classList.remove("hidden");
+    }
+
+    function startNightSleep() {
+        if (isSleeping()) return;
+        state.nightSleepStart = Date.now();
+        state.nightSleepWake = state.nightSleepStart + 8 * 3600 * 1000;
+        state.nightSleepEnergyBefore = state.stats.energy;
+        save();
+        sleepModalEl.classList.add("hidden");
+        render();
+        if (tg) tg.HapticFeedback?.notificationOccurred("success");
     }
     function startSleep(durationMs, gainRatio) {
         state.sleepUntil = Date.now() + durationMs;
@@ -575,6 +658,8 @@
     $("sleepFast").addEventListener("click", () => startSleep(SLEEP_FAST_MS, SLEEP_FAST_GAIN));
     $("sleepDeep").addEventListener("click", () => startSleep(SLEEP_DEEP_MS, SLEEP_DEEP_GAIN));
     $("sleepCancel").addEventListener("click", () => sleepModalEl.classList.add("hidden"));
+    const nightBtn = $("sleepNight");
+    if (nightBtn) nightBtn.addEventListener("click", startNightSleep);
 
     // ---------- Админка ----------
 
