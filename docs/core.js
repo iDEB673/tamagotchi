@@ -410,14 +410,17 @@
 
     let shopTab = "clothes";
 
-    $("openShop").addEventListener("click", () => {
-        if (isSleeping()) return;
-        hideAll();
-        shopEl.classList.remove("hidden");
-        shopTab = "clothes";
-        updateShopTabs();
-        renderShop();
-    });
+    const openShopBtn = $("openShop");
+    if (openShopBtn) {
+        openShopBtn.addEventListener("click", () => {
+            if (isSleeping()) return;
+            hideAll();
+            shopEl.classList.remove("hidden");
+            shopTab = "clothes";
+            updateShopTabs();
+            renderShop();
+        });
+    }
     $("shopClose").addEventListener("click", () => showGame());
     document.querySelectorAll(".shop__tab[data-tab]").forEach(tab => {
         tab.addEventListener("click", () => { shopTab = tab.dataset.tab; updateShopTabs(); renderShop(); });

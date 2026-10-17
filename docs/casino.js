@@ -168,7 +168,8 @@
     }
 
     function bind() {
-        $("openCasino").addEventListener("click", openCasino);
+        const casinoBtn = $("openCasino");
+        if (casinoBtn) casinoBtn.addEventListener("click", openCasino);
         $("casinoBack").addEventListener("click", () => App.showGame());
         $("spinBtn").addEventListener("click", spin);
 
