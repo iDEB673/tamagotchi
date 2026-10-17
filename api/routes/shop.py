@@ -49,6 +49,12 @@ SHOP_ITEMS = {
         "price": 150,
         "special": False,
     },
+        "wheel_face": {
+        "name": "Колесо на лице",
+        "emoji": "🎡",
+        "price": 0,
+        "special": True,   # скрытый, только из казино
+    },
 }
 
 

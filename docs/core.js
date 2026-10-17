@@ -58,7 +58,9 @@
         crown:      { name: "Корона",           emoji: "👑", price: 200 },
         mask:       { name: "Маска анонимуса",  emoji: "🎭", price: 150 },
         wizard_hat: { name: "Шапка волшебника", emoji: "🧙", price: 0, hidden: true },
+        wheel_face: { name: "Колесо на лице",   emoji: "🎡", price: 0, hidden: true },
     };
+
 
     const defaultState = () => ({
         petName: null, coins: 100,
@@ -69,6 +71,7 @@
         nightSleepWake: null,
         nightSleepEnergyBefore: 0,
         owned: [], equipped: null, food: {},
+        casinoPool: null,
     });
 
     let state = load() || defaultState();

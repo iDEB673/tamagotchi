@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Мой питомец</title>
-    <link rel="stylesheet" href="style.css?v=27">
-    <script src="telegram-web-app.js?v=27"></script>
+    <link rel="stylesheet" href="style.css?v=28">
+    <script src="telegram-web-app.js?v=28"></script>
 </head>
 <body>
 
@@ -50,7 +50,8 @@
             <button class="action" data-action="play">🎮<span>Играть</span></button>
             <button class="action" data-action="sleep">😴<span>Спать</span></button>
             <button class="action" data-action="wash">🚿<span>Помыть</span></button>
-            <button class="action action--wide" id="openShop">🛍<span>Магазин</span></button>
+            <button class="action" id="openShop">🛍<span>Магазин</span></button>
+            <button class="action" id="openCasino">🎰<span>Казино</span></button>
         </div>
     </div>
 
@@ -355,12 +356,45 @@
             </div>
         </div>
     </div>
+    <!-- Казино -->
+    <div id="casino" class="screen casino hidden">
+        <header class="header">
+            <div class="header__name">🎰 Казино</div>
+            <div class="header__coins">💰 <span id="casinoCoins">0</span></div>
+        </header>
+
+        <div class="wheel-container">
+            <div class="wheel-pointer">▼</div>
+            <div class="wheel" id="wheel">
+                <div class="wheel-center">🎰</div>
+            </div>
+        </div>
+
+        <div class="casino-actions">
+            <button id="spinBtn" class="onboarding__button">Крутить — 50 💰</button>
+            <button id="casinoBack" class="onboarding__button onboarding__button--secondary">← Назад</button>
+        </div>
+
+        <div id="casinoResult" class="mg-modal hidden">
+            <div class="mg-modal__content">
+                <div class="mg-modal__emoji" id="crEmoji">🎉</div>
+                <h2 class="mg-modal__title" id="crTitle">Ты выиграл!</h2>
+                <div class="mg-modal__reward" id="crReward">+100 💰</div>
+                <p class="mg-modal__sub" id="crSub">Крути ещё!</p>
+                <div class="mg-modal__buttons">
+                    <button id="crBack" class="mg-modal__btn">Закрыть</button>
+                    <button id="crSpin" class="mg-modal__btn mg-modal__btn--primary">Ещё раз</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Модули -->
-    <script src="core.js?v=27"></script>
-    <script src="clicker.js?v=27"></script>
-    <script src="blockblast.js?v=27"></script>
-    <script src="sudoku.js?v=27"></script>
-    <script src="leaderboard.js?v=27"></script>
+    <script src="core.js?v=28"></script>
+    <script src="clicker.js?v=28"></script>
+    <script src="blockblast.js?v=28"></script>
+    <script src="sudoku.js?v=28"></script>
+    <script src="casino.js?v=28"></script>
+    <script src="leaderboard.js?v=28"></script>
 </body>
 </html>
