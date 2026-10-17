@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Мой питомец</title>
-    <link rel="stylesheet" href="style.css?v=30">
-    <script src="telegram-web-app.js?v=30"></script>
+    <link rel="stylesheet" href="style.css?v=31">
+    <script src="telegram-web-app.js?v=31"></script>
 </head>
 <body>
 
@@ -51,8 +51,48 @@
             <button class="action" data-action="play">🎮<span>Играть</span></button>
             <button class="action" data-action="sleep">😴<span>Спать</span></button>
             <button class="action" data-action="wash">🚿<span>Помыть</span></button>
-            <button class="action" id="openShop">🛍<span>Магазин</span></button>
-            <button class="action" id="openCasino">🎰<span>Казино</span></button>
+            <button class="action action--wide" id="openMenu">🎒<span>Меню</span></button>
+        </div>
+    </div>
+
+    <!-- Меню -->
+    <div id="menuScreen" class="screen onboarding hidden">
+        <div class="onboarding__content">
+            <div class="onboarding__emoji">🎒</div>
+            <h1 class="onboarding__title">Меню</h1>
+            <button id="menuShop" class="game-choice">
+                <div class="game-choice__emoji">🛍</div>
+                <div class="game-choice__text">
+                    <div class="game-choice__title">Магазин</div>
+                    <div class="game-choice__sub">Одежда и еда</div>
+                </div>
+            </button>
+            <button id="menuCasino" class="game-choice">
+                <div class="game-choice__emoji">🎰</div>
+                <div class="game-choice__text">
+                    <div class="game-choice__title">Казино</div>
+                    <div class="game-choice__sub">Колесо фортуны</div>
+                </div>
+            </button>
+            <button id="menuAch" class="game-choice">
+                <div class="game-choice__emoji">🏆</div>
+                <div class="game-choice__text">
+                    <div class="game-choice__title">Достижения</div>
+                    <div class="game-choice__sub">Получай награды за активность</div>
+                </div>
+            </button>
+            <button id="menuCancel" class="onboarding__button onboarding__button--secondary">← Назад</button>
+        </div>
+    </div>
+
+    <!-- Экран достижений (вставь после экрана Меню) -->
+    <div id="achievements" class="screen shop hidden">
+        <header class="header">
+            <div class="header__name">🏆 Достижения</div>
+        </header>
+        <div class="shop__list" id="achList"></div>
+        <div class="actions">
+            <button class="action action--wide" id="achClose">← Назад</button>
         </div>
     </div>
 
@@ -400,11 +440,11 @@
     </div>
 
     <!-- Модули -->
-    <script src="core.js?v=30"></script>
-    <script src="clicker.js?v=30"></script>
-    <script src="blockblast.js?v=30"></script>
-    <script src="sudoku.js?v=30"></script>
-    <script src="casino.js?v=30"></script>
-    <script src="leaderboard.js?v=30"></script>
+    <script src="core.js?v=31"></script>
+    <script src="clicker.js?v=31"></script>
+    <script src="blockblast.js?v=31"></script>
+    <script src="sudoku.js?v=31"></script>
+    <script src="casino.js?v=31"></script>
+    <script src="leaderboard.js?v=31"></script>
 </body>
 </html>

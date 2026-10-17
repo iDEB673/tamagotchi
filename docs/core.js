@@ -80,6 +80,7 @@
 
     const FOOD_ITEMS = {
         cola:     { name: "Кола",    emoji: "🥤", price: 3,  hunger: 7  },
+        tea:      { name: "Чай",     emoji: "🍵", price: 4,  hunger: 5  },
         kitkat:   { name: "Кит-Кат", emoji: "🍫", price: 5,  hunger: 10 },
         donut:    { name: "Пончик",  emoji: "🍩", price: 6,  hunger: 12 },
         pizza:    { name: "Пицца",   emoji: "🍕", price: 7,  hunger: 14 },
@@ -94,6 +95,7 @@
         mask:       { name: "Маска анонимуса",  emoji: "🎭", price: 150 },
         wizard_hat: { name: "Шапка волшебника", emoji: "🧙", price: 0, hidden: true },
         wheel_face: { name: "Колесо на лице",   emoji: "🎡", price: 0, hidden: true },
+        tea_mug:    { name: "Кружка чая",     emoji: "🍵", price: 0, hidden: true },
     };
 
 
@@ -107,6 +109,9 @@
         nightSleepEnergyBefore: 0,
         owned: [], equipped: null, food: {},
         casinoPool: null,
+        teaCount: 0,
+        achievements: [],
+
     });
 
     let state = load() || defaultState();
@@ -249,6 +254,19 @@
         finishNightSleep(hours);
         render();
         if (tg) tg.HapticFeedback?.notificationOccurred("success");
+    }
+
+    function checkAchievements() {
+        // Достижение: Напоить 10 чаями
+        if (state.teaCount >= 10 && !state.achievements.includes("tea_lover")) {
+            state.achievements.push("tea_lover");
+            if (!state.owned.includes("tea_mug")) state.owned.push("tea_mug");
+            save();
+            setTimeout(() => {
+                alert("🏆 Достижение разблокировано!\n\n«Чайный магнат»\nВыпито 10 кружек чая.\n\n🎁 Награда: скин «Кружка чая» добавлен в инвентарь.");
+                if (tg) tg.HapticFeedback?.notificationOccurred("success");
+            }, 500); // Небольшая задержка, чтобы не перекрывать алерт кормления
+        }
     }
 
     function render() {
@@ -614,6 +632,20 @@
         feedModalEl.classList.add("hidden");
         render();
         if (tg) tg.HapticFeedback?.impactOccurred("light");
+        state.stats.hunger = Math.min(100, state.stats.hunger + food.hunger);
+        state.stats.happiness = Math.min(100, state.stats.happiness + 2);
+        
+        // Логика чая
+        if (id === "tea") {
+            state.teaCount = (state.teaCount || 0) + 1;
+        }
+
+        save();
+        feedModalEl.classList.add("hidden");
+        render();
+        checkAchievements(); // <--- Вызов проверки
+        if (tg) tg.HapticFeedback?.impactOccurred("light");
+
     }
     $("feedCancel").addEventListener("click", () => feedModalEl.classList.add("hidden"));
     $("feedShop").addEventListener("click", () => {

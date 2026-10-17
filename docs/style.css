@@ -744,3 +744,49 @@ body.night-mode .header {
 .changelog-changes li {
     margin-bottom: 4px;
 }
+
+/* ---------- Достижения ---------- */
+
+.ach-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px;
+    background: var(--bg-card);
+    border-radius: 14px;
+    border: 2px solid transparent;
+}
+
+.ach-item--unlocked {
+    border-color: var(--green);
+}
+
+.ach-item--locked {
+    opacity: 0.6;
+}
+
+.ach-icon {
+    font-size: 32px;
+    flex-shrink: 0;
+}
+
+.ach-info {
+    flex: 1;
+}
+
+.ach-title {
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 4px;
+}
+
+.ach-desc {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.ach-status {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--green);
+}
