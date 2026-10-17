@@ -934,12 +934,23 @@
             }
         } catch (e) { console.warn(e); }
         let serverName = null;
-        try { const pet = await apiFetch("/api/pet"); if (pet.name) serverName = pet.name; } catch (e) { console.warn(e); }
+        try { 
+            const pet = await apiFetch("/api/pet"); 
+            if (pet.name) serverName = pet.name; 
+        } catch (e) { 
+            console.warn(e); 
+        }
+
         if (serverName && serverName.toLowerCase() !== "питомец") {
             state.petName = serverName;
+        } else if (serverName === null) {
+            // Сервер недоступен (или уснул) — НЕ трогаем локальное имя
+            console.warn("API недоступен, используем локальное имя:", state.petName);
         } else {
+            // Сервер ответил, и там дефолтное имя "Питомец"
             state.petName = null;
         }
+        
         save();
         if (!state.petName) showOnboarding();
         else showGame();
