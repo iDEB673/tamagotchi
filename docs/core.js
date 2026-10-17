@@ -261,15 +261,9 @@
     }
 
     function checkAchievements() {
-        // Достижение: Напоить 10 чаями
         if (state.teaCount >= 10 && !state.achievements.includes("tea_lover")) {
             state.achievements.push("tea_lover");
-            if (!state.owned.includes("tea_mug")) state.owned.push("tea_mug");
             save();
-            setTimeout(() => {
-                alert("🏆 Достижение разблокировано!\n\n«Чайный магнат»\nВыпито 10 кружек чая.\n\n🎁 Награда: скин «Кружка чая» добавлен в инвентарь.");
-                if (tg) tg.HapticFeedback?.notificationOccurred("success");
-            }, 500); // Небольшая задержка, чтобы не перекрывать алерт кормления
         }
     }
 

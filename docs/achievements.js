@@ -14,9 +14,9 @@
         const list = $("achList");
         list.innerHTML = "";
 
-        // На всякий случай проверяем массивы
         const achievements = state.achievements || [];
         const teaCount = state.teaCount || 0;
+        const owned = state.owned || [];
 
         const ACHS = [
             {
@@ -25,22 +25,54 @@
                 desc: "Выпить 10 кружек чая",
                 icon: "🍵",
                 progress: `${Math.min(10, teaCount)}/10`,
+                rewardId: "tea_mug",
             }
         ];
 
         for (const ach of ACHS) {
             const unlocked = achievements.includes(ach.id);
+            const hasReward = owned.includes(ach.rewardId);
+            
             const row = document.createElement("div");
             row.className = "ach-item " + (unlocked ? "ach-item--unlocked" : "ach-item--locked");
+            
+            let actionHtml = "";
+            if (unlocked) {
+                if (hasReward) {
+                    actionHtml = `<div class="ach-status">✅</div>`;
+                } else {
+                    actionHtml = `<button class="shop-item__btn shop-item__btn--equip" id="claim_${ach.id}">Забрать</button>`;
+                }
+            } else {
+                actionHtml = `<div class="ach-status">${ach.progress}</div>`;
+            }
+
             row.innerHTML = `
                 <div class="ach-icon">${ach.icon}</div>
                 <div class="ach-info">
                     <div class="ach-title">${ach.title}</div>
                     <div class="ach-desc">${ach.desc}</div>
                 </div>
-                <div class="ach-status">${unlocked ? "✅" : ach.progress}</div>
+                ${actionHtml}
             `;
+
             list.appendChild(row);
+
+            // Привязка кнопки "Забрать"
+            if (unlocked && !hasReward) {
+                const btn = document.getElementById(`claim_${ach.id}`);
+                if (btn) {
+                    btn.addEventListener("click", () => {
+                        if (!state.owned.includes(ach.rewardId)) {
+                            state.owned.push(ach.rewardId);
+                            App.save();
+                            App.notify("🎁 Награда получена! Скин добавлен в инвентарь.");
+                            App.hapticNotify("success");
+                            renderAchievements(); // перерисовать
+                        }
+                    });
+                }
+            }
         }
     }
     function bind() {
