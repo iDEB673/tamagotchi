@@ -647,22 +647,19 @@ body.night-mode .header {
     z-index: 5;
 }
 
-.wheel::before {
-    content: "💰";
+.wheel-slice {
     position: absolute;
-    top: 10%;
-    left: 50%;
-    transform: translateX(-50%) rotate(0deg);
-    font-size: 24px;
+    inset: 0;
+    pointer-events: none;
 }
 
-.wheel::after {
-    content: "🍕";
+.wheel-slice span {
     position: absolute;
-    bottom: 10%;
+    top: 8%;
     left: 50%;
-    transform: translateX(-50%) rotate(180deg);
-    font-size: 24px;
+    transform: translateX(-50%);
+    font-size: 28px;
+    filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));
 }
 
 .casino-actions {

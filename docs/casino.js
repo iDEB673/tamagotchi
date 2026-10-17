@@ -181,8 +181,28 @@
         });
     }
 
+    function initWheelVisuals() {
+        const wheel = $("wheel");
+        if (!wheel) return;
+        // Удаляем старые слайсы, если есть
+        wheel.querySelectorAll(".wheel-slice").forEach(el => el.remove());
+
+        // 8 секторов по 45 градусов. Центр сектора = index * 45 + 22.5
+        PRIZES.forEach((prize, i) => {
+            const slice = document.createElement("div");
+            slice.className = "wheel-slice";
+            slice.style.transform = `rotate(${i * 45 + 22.5}deg)`;
+
+            const span = document.createElement("span");
+            span.textContent = prize.emoji;
+            slice.appendChild(span);
+            wheel.appendChild(slice);
+        });
+    }
+
     async function init() {
         App = await waitForApp();
+        initWheelVisuals();
         bind();
     }
 
