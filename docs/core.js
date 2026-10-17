@@ -121,8 +121,12 @@
             const raw = localStorage.getItem(STORAGE_KEY);
             if (!raw) return null;
             const data = JSON.parse(raw);
+            // Миграция старых сейвов
             if (!data.food) data.food = {};
             if (!data.owned) data.owned = [];
+            if (!data.achievements) data.achievements = [];
+            if (data.teaCount === undefined) data.teaCount = 0;
+            if (!data.casinoPool) data.casinoPool = null;
             return data;
         } catch { return null; }
     }

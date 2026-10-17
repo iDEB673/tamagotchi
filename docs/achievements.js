@@ -14,18 +14,22 @@
         const list = $("achList");
         list.innerHTML = "";
 
+        // На всякий случай проверяем массивы
+        const achievements = state.achievements || [];
+        const teaCount = state.teaCount || 0;
+
         const ACHS = [
             {
                 id: "tea_lover",
                 title: "Чайный магнат",
                 desc: "Выпить 10 кружек чая",
                 icon: "🍵",
-                progress: `${Math.min(10, state.teaCount || 0)}/10`,
+                progress: `${Math.min(10, teaCount)}/10`,
             }
         ];
 
         for (const ach of ACHS) {
-            const unlocked = state.achievements.includes(ach.id);
+            const unlocked = achievements.includes(ach.id);
             const row = document.createElement("div");
             row.className = "ach-item " + (unlocked ? "ach-item--unlocked" : "ach-item--locked");
             row.innerHTML = `
@@ -39,7 +43,6 @@
             list.appendChild(row);
         }
     }
-
     function bind() {
         $("openMenu").addEventListener("click", () => {
             App.hideAll();
