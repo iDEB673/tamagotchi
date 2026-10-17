@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Мой питомец</title>
-    <link rel="stylesheet" href="style.css?v=29">
-    <script src="telegram-web-app.js?v=29"></script>
+    <link rel="stylesheet" href="style.css?v=30">
+    <script src="telegram-web-app.js?v=30"></script>
 </head>
 <body>
 
@@ -26,6 +26,7 @@
         <header class="header">
             <div class="header__name" id="petName">Питомец</div>
             <div class="header__right">
+                <span id="versionTag" class="version-tag">v0.9.0</span>
                 <button id="adminBtn" class="header__admin hidden">🛠</button>
                 <div class="header__coins">💰 <span id="coins">100</span></div>
             </div>
@@ -335,6 +336,15 @@
         </div>
     </div>
 
+    <!-- Что нового -->
+    <div id="changelogModal" class="mg-modal hidden">
+        <div class="mg-modal__content" style="max-width: 400px;">
+            <h2 class="mg-modal__title" style="color:#111;">📜 Что нового</h2>
+            <div id="changelogList" class="changelog-list"></div>
+            <button id="changelogClose" class="mg-modal__btn mg-modal__btn--wide">Закрыть</button>
+        </div>
+    </div>
+
     <!-- Модалка сна -->
     <div id="sleepModal" class="mg-modal hidden">
         <div class="mg-modal__content">
@@ -390,11 +400,11 @@
     </div>
 
     <!-- Модули -->
-    <script src="core.js?v=29"></script>
-    <script src="clicker.js?v=29"></script>
-    <script src="blockblast.js?v=29"></script>
-    <script src="sudoku.js?v=29"></script>
-    <script src="casino.js?v=29"></script>
-    <script src="leaderboard.js?v=29"></script>
+    <script src="core.js?v=30"></script>
+    <script src="clicker.js?v=30"></script>
+    <script src="blockblast.js?v=30"></script>
+    <script src="sudoku.js?v=30"></script>
+    <script src="casino.js?v=30"></script>
+    <script src="leaderboard.js?v=30"></script>
 </body>
 </html>

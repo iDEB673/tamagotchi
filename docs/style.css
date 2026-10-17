@@ -679,3 +679,68 @@ body.night-mode .header {
 .casino .header {
     width: 100%;
 }
+
+/* ---------- Версия и ченджлог ---------- */
+
+.version-tag {
+    font-size: 11px;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: background 0.15s;
+    font-weight: 600;
+    user-select: none;
+}
+
+.version-tag:active {
+    background: var(--bg-card);
+}
+
+.changelog-list {
+    text-align: left;
+    max-height: 50vh;
+    overflow-y: auto;
+    margin: 0 0 20px 0;
+    padding-right: 8px;
+    color: #333;
+}
+
+.changelog-item {
+    margin-bottom: 18px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 12px;
+}
+
+.changelog-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.changelog-version {
+    font-weight: 800;
+    color: #5288c1;
+    font-size: 15px;
+    margin-bottom: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.changelog-date {
+    font-size: 11px;
+    color: #999;
+    font-weight: 500;
+}
+
+.changelog-changes {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.changelog-changes li {
+    margin-bottom: 4px;
+}

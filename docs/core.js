@@ -4,6 +4,41 @@
 
     const ADMIN_ID = 5410929450;
 
+    const CURRENT_VERSION = "v0.9.0";
+    const CHANGELOG = [
+        {
+            version: "v0.9.0",
+            date: "17.10.2026",
+            changes: [
+                "🎰 Добавлено казино (Колесо фортуны) с шансом выбить редкий скин",
+                "🌙 Ночной сон (до 8 часов, восстановление энергии +30/час)",
+                "⏱ Таймер в Судоку",
+                "🏆 Таблица лидеров для Судоку (по скорости решения)",
+                "Исправление багов"
+            ]
+        },
+        {
+            version: "v0.8.0",
+            date: "16.10.2026",
+            changes: [
+                "🔢 Добавлено Судоку (3 уровня сложности, режимы ввода, заметки)",
+                "📝 Улучшен ввод в Судоку (авто-удаление ошибочных цифр)",
+                "🎩 Добавлены скины и инвентарь",
+                "Исправление багов"
+            ]
+        },
+        {
+            version: "v0.7.0",
+            date: "15.10.2026",
+            changes: [
+                "🏆 Таблица лидеров для Block Blast и Кликера",
+                "♾ Бесконечный режим в Block Blast",
+                "🎯 3 уровня сложности в Block Blast",
+                "Исправление багов"
+            ]
+        }
+    ];
+
     function getMyUserId() {
         const unsafeId = tg?.initDataUnsafe?.user?.id;
         if (unsafeId) return parseInt(unsafeId, 10);
@@ -821,6 +856,38 @@
     document.querySelectorAll("[data-atab]").forEach(t => {
         t.addEventListener("click", () => { adminTab = t.dataset.atab; renderAdmin(); });
     });
+
+    // Ченджлог
+    const versionTag = $("versionTag");
+    if (versionTag) {
+        versionTag.textContent = CURRENT_VERSION;
+        versionTag.addEventListener("click", () => {
+            renderChangelog();
+            $("changelogModal").classList.remove("hidden");
+        });
+    }
+    $("changelogClose").addEventListener("click", () => {
+        $("changelogModal").classList.add("hidden");
+    });
+
+    function renderChangelog() {
+        const list = $("changelogList");
+        list.innerHTML = "";
+        for (const entry of CHANGELOG) {
+            const div = document.createElement("div");
+            div.className = "changelog-item";
+            
+            let html = `<div class="changelog-version"><span>${entry.version}</span><span class="changelog-date">${entry.date}</span></div>`;
+            html += `<ul class="changelog-changes">`;
+            for (const change of entry.changes) {
+                html += `<li>${change}</li>`;
+            }
+            html += `</ul>`;
+            
+            div.innerHTML = html;
+            list.appendChild(div);
+        }
+    }
 
     // ---------- Синк с сервером ----------
 
