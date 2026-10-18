@@ -192,8 +192,7 @@
 
     function hideAll() {
         if (typeof bbCleanupGhosts === "function") bbCleanupGhosts();
-        stopSleepSound();
-        cleanupFns.forEach(fn => { try { fn(); } catch (e) {} });
+        stopSleepSound(); // <--- ДОБАВИТЬ ЭТУ СТРОКУ
         document.querySelectorAll(".screen, .mg-modal").forEach(el => {
             el.classList.add("hidden");
         });
@@ -1124,6 +1123,8 @@
         hapticImpact: (style) => tg?.HapticFeedback?.impactOccurred(style || "light"),
         hapticNotify: (type) => tg?.HapticFeedback?.notificationOccurred(type || "success"),
         playSound: (name, volume) => playSound(name, volume),
+        startSleepSound: () => startSleepSound(),
+        stopSleepSound: () => stopSleepSound(),   
         // Constants
         SHOP_ITEMS, FOOD_ITEMS, STORAGE_KEY,
     };
