@@ -271,7 +271,6 @@
 
     // ---------- Аудио-менеджер (Web Audio API) ----------
     let audioCtx = null;
-    let sleepSource = null;
 
     function initAudio() {
         if (!audioCtx) {
@@ -353,67 +352,22 @@
     }
 
     // ---------- Фоновый звук сна ----------
-    let sleepNodes = [];
-    let sleepGain = null;
+    let sleepAudio = null;
 
     function startSleepSound() {
         if (!state.soundEnabled) return;
-        try {
-            initAudio();
-            if (sleepNodes.length > 0) return; // Уже играет
-
-            const masterGain = audioCtx.createGain();
-            masterGain.gain.value = 0;
-            masterGain.connect(audioCtx.destination);
-
-            // Создаём 3 "сверчка"
-            for (let i = 0; i < 3; i++) {
-                const osc = audioCtx.createOscillator();
-                osc.type = "sine"; // Мягкая волна
-                osc.frequency.value = 2200 + i * 300; // 2200-2800 Гц (не писк)
-
-                const lfo = audioCtx.createOscillator();
-                lfo.type = "sine";
-                lfo.frequency.value = 6 + i * 3; // 6-12 Гц (медленная трель)
-
-                const lfoGain = audioCtx.createGain();
-                lfoGain.gain.value = 0.6; // Глубина мерцания
-
-                const oscGain = audioCtx.createGain();
-                oscGain.gain.value = 0.04; // Очень тихо, на фоне
-
-                lfo.connect(lfoGain);
-                lfoGain.connect(oscGain.gain);
-
-                osc.connect(oscGain);
-                oscGain.connect(masterGain);
-
-                osc.start();
-                lfo.start();
-                sleepNodes.push(osc, lfo);
-            }
-
-            // Плавное появление за 2 секунды
-            masterGain.gain.linearRampToValueAtTime(0.4, audioCtx.currentTime + 2);
-            sleepNodes.push(masterGain);
-            sleepGain = masterGain;
-
-        } catch(e) { console.warn(e); }
+        if (!sleepAudio) {
+            sleepAudio = new Audio('audio/sleep.ogg');
+            sleepAudio.loop = true;
+            sleepAudio.volume = 0.25; // Громкость фона (0.0 - 1.0)
+        }
+        sleepAudio.play().catch(e => console.warn("Не удалось запустить звук сна:", e));
     }
 
     function stopSleepSound() {
-        if (sleepGain && audioCtx) {
-            sleepGain.gain.cancelScheduledValues(audioCtx.currentTime);
-            sleepGain.gain.setValueAtTime(sleepGain.gain.value, audioCtx.currentTime);
-            sleepGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 1);
-            
-            setTimeout(() => {
-                sleepNodes.forEach(node => {
-                    try { node.stop(); } catch(e){}
-                });
-                sleepNodes = [];
-                sleepGain = null;
-            }, 1000);
+        if (sleepAudio) {
+            sleepAudio.pause();
+            sleepAudio.currentTime = 0; // Сбрасываем на начало
         }
     }
 
@@ -587,8 +541,15 @@
         soundToggleBtn.addEventListener("click", () => {
             state.soundEnabled = !state.soundEnabled;
             save();
-            render(); // обновит иконку
-            if (state.soundEnabled) playSound("click"); // если включили - проверим звук
+            render();
+            
+            if (state.soundEnabled) {
+                playSound("click");
+                if (isSleeping()) startSleepSound(); // Если выключили во время сна
+            } else {
+                stopSleepSound(); // Принудительно выключаем фон
+            }
+            
             if (tg) tg.HapticFeedback?.impactOccurred("light");
         });
     }
