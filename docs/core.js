@@ -269,18 +269,110 @@
     }
 
     // ---------- Аудио-менеджер ----------
-    const audioCache = {};
+    let audioCtx = null;
     
+    function initAudio() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === "suspended") {
+            audioCtx.resume();
+        }
+    }
+
     function playSound(name, volume = 0.5) {
         if (!state.soundEnabled) return;
         try {
-            if (!audioCache[name]) {
-                audioCache[name] = new Audio(`audio/${name}.ogg`);
-                audioCache[name].preload = "auto";
+            initAudio();
+            if (!audioCtx) return;
+
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            gain.gain.value = volume;
+
+            if (name === "click") {
+                osc.type = "sine";
+                osc.frequency.setValueAtTime(800, now);
+                osc.frequency.exponentialRampToValueAtTime(300, now + 0.05);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+                osc.start(now);
+                osc.stop(now + 0.05);
+            } else if (name === "eat") {
+                osc.type = "square";
+                osc.frequency.setValueAtTime(200, now);
+                osc.frequency.setValueAtTime(150, now + 0.05);
+                osc.frequency.setValueAtTime(200, now + 0.1);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                osc.start(now);
+                osc.stop(now + 0.15);
+            } else if (name === "error") {
+                osc.type = "sawtooth";
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.exponentialRampToValueAtTime(100, now + 0.2);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                osc.start(now);
+                osc.stop(now + 0.2);
+            } else if (name === "win") {
+                osc.type = "triangle";
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.setValueAtTime(600, now + 0.1);
+                osc.frequency.setValueAtTime(800, now + 0.2);
+                osc.frequency.setValueAtTime(1200, now + 0.3);
+                gain.gain.setValueAtTime(volume, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                osc.start(now);
+                osc.stop(now + 0.5);
+            } else if (name === "spin") {
+                osc.type = "square";
+                for (let i = 0; i < 15; i++) {
+                    const time = now + i * 0.1;
+                    if (time > now + 2) break;
+                    osc.frequency.setValueAtTime(1000, time);
+                    osc.frequency.setValueAtTime(500, time + 0.02);
+                }
+                gain.gain.setValueAtTime(volume * 0.5, now);
+                gain.gain.linearRampToValueAtTime(0, now + 2);
+                osc.start(now);
+                osc.stop(now + 2);
+            } else if (name === "place") {
+                osc.type = "sine";
+                osc.frequency.setValueAtTime(300, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+                osc.start(now);
+                osc.stop(now + 0.08);
+            } else if (name === "buy") {
+                osc.type = "triangle";
+                osc.frequency.setValueAtTime(1500, now);
+                osc.frequency.setValueAtTime(2000, now + 0.08);
+                osc.frequency.setValueAtTime(2500, now + 0.16);
+                gain.gain.setValueAtTime(volume * 0.8, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            } else if (name === "sleep") {
+                osc.type = "square";
+                osc.frequency.value = 4000;
+                gain.gain.setValueAtTime(0, now);
+                for (let i = 0; i < 6; i++) {
+                    const t = now + i * 0.15;
+                    gain.gain.setValueAtTime(volume * 0.2, t);
+                    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.05);
+                    osc.frequency.setValueAtTime(4000, t);
+                    osc.frequency.exponentialRampToValueAtTime(5000, t + 0.05);
+                }
+                osc.start(now);
+                osc.stop(now + 1.0);
+            } else {
+                osc.type = "sine";
+                osc.frequency.setValueAtTime(400, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now);
+                osc.stop(now + 0.1);
             }
-            const sound = audioCache[name].cloneNode();
-            sound.volume = volume;
-            sound.play().catch(() => {}); // Игнорируем ошибки, если браузер блокирует звук
         } catch (e) {
             console.warn("Audio error:", e);
         }
@@ -573,6 +665,7 @@
             }
         } else state.coins -= food.price;
         state.food[id] = (state.food[id] || 0) + 1;
+        playSound("buy"); // <--- ЗВУК ПОКУПКИ
         save(); renderShop();
         if (tg) tg.HapticFeedback?.notificationOccurred("success");
     }
@@ -585,6 +678,7 @@
             state.coins -= item.price;
             state.owned.push(id);
             state.equipped = id;
+            playSound("buy"); // <--- ЗВУК ПОКУПКИ
             save(); renderShop();
             if (tg) tg.HapticFeedback?.notificationOccurred("success");
         };
@@ -594,6 +688,7 @@
                     state.coins = res.coins;
                     state.owned.push(id);
                     state.equipped = id;
+                    playSound("buy"); // <--- ЗВУК ПОКУПКИ
                     save(); renderShop();
                     if (tg) tg.HapticFeedback?.notificationOccurred("success");
                 })
@@ -702,6 +797,7 @@
         state.nightSleepStart = Date.now();
         state.nightSleepWake = state.nightSleepStart + 8 * 3600 * 1000;
         state.nightSleepEnergyBefore = state.stats.energy;
+        playSound("sleep", 0.7); // <--- ЗВУК СВЕРЧКОВ
         save();
         sleepModalEl.classList.add("hidden");
         render();
@@ -711,6 +807,7 @@
         state.sleepUntil = Date.now() + durationMs;
         state.sleepGain = gainRatio;
         state.sleepStartedAt = Date.now();
+        playSound("sleep"); // <--- ЗВУК СВЕРЧКОВ
         save();
         sleepModalEl.classList.add("hidden");
         render();

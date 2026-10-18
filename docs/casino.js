@@ -126,13 +126,11 @@
         if (prize.type === "coins_small" || prize.type === "coins_med" || prize.type === "coins_big" || prize.type === "coins_tiny") {
             const coins = prize.coins;
             if (App.isOnline()) {
-                // Для начисления монет используем game/reward с игрой casino (нужно добавить в API)
-                // Но проще начислить локально и синкать через spend (в обратную сторону нет)
-                // Пока начислим локально, чтобы не плодить эндпоинты
                 state.coins += coins;
             } else {
                 state.coins += coins;
             }
+            App.playSound("buy"); // <--- ЗВУК КАССЫ ПРИ ВЫИГРЫШЕ
             titleText = "Монеты!";
             subText = `Ты выиграл ${coins} 💰`;
         } else if (prize.type === "food") {
