@@ -294,7 +294,9 @@
 
         // Иконка звука
         const soundBtn = $("soundToggle");
-        if (soundBtn) soundBtn.textContent = state.soundEnabled ? "🔊" : "🔇";
+        if (soundBtn) {
+            soundBtn.textContent = state.soundEnabled ? "🔊" : "🔇";
+        }
 
         petNameEl.textContent = state.petName || "Питомец";
         coinsEl.textContent = state.coins;
@@ -441,6 +443,17 @@
             shopTab = "clothes";
             updateShopTabs();
             renderShop();
+        });
+    }
+
+    const soundToggleBtn = $("soundToggle");
+    if (soundToggleBtn) {
+        soundToggleBtn.addEventListener("click", () => {
+            state.soundEnabled = !state.soundEnabled;
+            save();
+            render(); // обновит иконку
+            if (state.soundEnabled) playSound("click"); // если включили - проверим звук
+            if (tg) tg.HapticFeedback?.impactOccurred("light");
         });
     }
     $("shopClose").addEventListener("click", () => showGame());
@@ -663,7 +676,7 @@
         checkAchievements();
         if (tg) tg.HapticFeedback?.impactOccurred("light");
     }
-    
+
     $("feedCancel").addEventListener("click", () => feedModalEl.classList.add("hidden"));
     $("feedShop").addEventListener("click", () => {
         feedModalEl.classList.add("hidden");
