@@ -86,9 +86,6 @@
         $("menuShop").addEventListener("click", () => {
             App.hideAll();
             $("shop").classList.remove("hidden");
-            // Триггерим рендер магазина (вызываем клик по скрытой кнопке или просто вызываем логику, если экспортирована)
-            // Проще всего кликнуть по кнопке магазина, если она скрыта, но лучше вызвать функцию. 
-            // Пока просто откроем экран, core.js сделает рендер через слушатель.
             document.querySelector(".shop__tab[data-tab='clothes']").click();
         });
 
@@ -102,6 +99,15 @@
             App.hideAll();
             $("achievements").classList.remove("hidden");
             renderAchievements();
+        });
+
+        $("soundToggle").addEventListener("click", () => {
+            const state = App.getState();
+            state.soundEnabled = !state.soundEnabled;
+            App.save();
+            $("soundIcon").textContent = state.soundEnabled ? "🔊" : "🔇";
+            if (state.soundEnabled) App.playSound("click");
+            App.hapticImpact("light");
         });
 
         $("achClose").addEventListener("click", () => {

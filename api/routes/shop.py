@@ -53,7 +53,7 @@ SHOP_ITEMS = {
         "name": "Колесо на лице",
         "emoji": "🎡",
         "price": 0,
-        "special": True,   # скрытый, только из казино
+        "special": True,
     },
 }
 

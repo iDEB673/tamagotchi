@@ -111,7 +111,7 @@
         casinoPool: null,
         teaCount: 0,
         achievements: [],
-
+        soundEnabled: true,
     });
 
     let state = load() || defaultState();
@@ -127,6 +127,7 @@
             if (!data.achievements) data.achievements = [];
             if (data.teaCount === undefined) data.teaCount = 0;
             if (!data.casinoPool) data.casinoPool = null;
+            if (data.soundEnabled === undefined) data.soundEnabled = true;
             return data;
         } catch { return null; }
     }
@@ -267,10 +268,33 @@
         }
     }
 
+    // ---------- Аудио-менеджер ----------
+    const audioCache = {};
+    
+    function playSound(name, volume = 0.5) {
+        if (!state.soundEnabled) return;
+        try {
+            if (!audioCache[name]) {
+                audioCache[name] = new Audio(`audio/${name}.ogg`);
+                audioCache[name].preload = "auto";
+            }
+            const sound = audioCache[name].cloneNode();
+            sound.volume = volume;
+            sound.play().catch(() => {}); // Игнорируем ошибки, если браузер блокирует звук
+        } catch (e) {
+            console.warn("Audio error:", e);
+        }
+    }
+
     function render() {
+        // Ночной фон
         const hour = new Date().getHours();
         const night = hour >= 22 || hour < 8;
         document.body.classList.toggle("night-mode", night || isNightSleep());
+
+        // Иконка звука
+        const soundBtn = $("soundToggle");
+        if (soundBtn) soundBtn.textContent = state.soundEnabled ? "🔊" : "🔇";
 
         petNameEl.textContent = state.petName || "Питомец";
         coinsEl.textContent = state.coins;
@@ -629,25 +653,17 @@
         if (state.food[id] <= 0) delete state.food[id];
         state.stats.hunger = Math.min(100, state.stats.hunger + food.hunger);
         state.stats.happiness = Math.min(100, state.stats.happiness + 2);
-        save();
-        feedModalEl.classList.add("hidden");
-        render();
-        if (tg) tg.HapticFeedback?.impactOccurred("light");
-        state.stats.hunger = Math.min(100, state.stats.hunger + food.hunger);
-        state.stats.happiness = Math.min(100, state.stats.happiness + 2);
-        
-        // Логика чая
         if (id === "tea") {
             state.teaCount = (state.teaCount || 0) + 1;
         }
-
+        playSound("eat", 0.6);
         save();
         feedModalEl.classList.add("hidden");
         render();
-        checkAchievements(); // <--- Вызов проверки
+        checkAchievements();
         if (tg) tg.HapticFeedback?.impactOccurred("light");
-
     }
+    
     $("feedCancel").addEventListener("click", () => feedModalEl.classList.add("hidden"));
     $("feedShop").addEventListener("click", () => {
         feedModalEl.classList.add("hidden");
@@ -976,6 +992,7 @@
         confirm: (msg) => confirm(msg),
         hapticImpact: (style) => tg?.HapticFeedback?.impactOccurred(style || "light"),
         hapticNotify: (type) => tg?.HapticFeedback?.notificationOccurred(type || "success"),
+        playSound: (name, volume) => playSound(name, volume),
         // Constants
         SHOP_ITEMS, FOOD_ITEMS, STORAGE_KEY,
     };
