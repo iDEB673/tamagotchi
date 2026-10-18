@@ -77,6 +77,7 @@
 
     function bind() {
         $("openMenu").addEventListener("click", () => {
+            App.stopSleepSound(); // <--- ДОБАВЛЕНА ЭТА СТРОКА
             App.hideAll();
             $("menuScreen").classList.remove("hidden");
         });

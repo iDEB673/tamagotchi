@@ -332,6 +332,7 @@
 
         // Конфликт — красная вспышка, потом убираем
         if (sdIsConflict(r, c, n)) {
+            App.playSound("error");
             App.hapticNotify("error");
             sdUserGrid[r][c] = n;
             sdRender();
@@ -435,6 +436,7 @@
 
     function sdWin() {
         sdActive = false;
+        App.playSound("win"); 
         const time = sdStopTimer();
         const cfg = SD_LEVELS[sdCurrentLevel];
         const reward = cfg.reward;

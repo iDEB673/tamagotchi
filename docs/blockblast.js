@@ -232,6 +232,7 @@
         clearLines();
         if (shapes.every(s => s === null)) shapes = [newShape(), newShape(), newShape()];
         render();
+        App.playSound("place", 0.4);
         App.hapticImpact("light");
         const winScore = LEVELS[level].winScore;
         if (!infinite && score >= winScore && !finished) {
@@ -299,6 +300,7 @@
         $("bbResult").classList.remove("hidden");
     }
     async function onWin() {
+        App.playSound("win");
         const coins = await finishAndReward();
         const winScore = LEVELS[level].winScore;
         $("bbWinReward").textContent = `+${coins} 💰`;

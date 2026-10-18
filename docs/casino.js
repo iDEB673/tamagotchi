@@ -106,6 +106,7 @@
 
         const wheel = $("wheel");
         wheel.style.transform = `rotate(${targetAngle}deg)`;
+        App.playSound("spin", 0.5);
 
         // Ждём окончания анимации (4 сек)
         await new Promise(r => setTimeout(r, 4200));

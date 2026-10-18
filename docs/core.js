@@ -191,6 +191,8 @@
     const $ = (id) => document.getElementById(id);
 
     function hideAll() {
+        if (typeof bbCleanupGhosts === "function") bbCleanupGhosts();
+        stopSleepSound();
         cleanupFns.forEach(fn => { try { fn(); } catch (e) {} });
         document.querySelectorAll(".screen, .mg-modal").forEach(el => {
             el.classList.add("hidden");
@@ -268,9 +270,11 @@
         }
     }
 
-    // ---------- Аудио-менеджер ----------
+    // ---------- Аудио-менеджер (Web Audio API) ----------
     let audioCtx = null;
-    
+    let sleepSource = null;
+    let sleepGain = null;
+
     function initAudio() {
         if (!audioCtx) {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -299,23 +303,20 @@
                 osc.frequency.setValueAtTime(800, now);
                 osc.frequency.exponentialRampToValueAtTime(300, now + 0.05);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
-                osc.start(now);
-                osc.stop(now + 0.05);
+                osc.start(now); osc.stop(now + 0.05);
             } else if (name === "eat") {
                 osc.type = "square";
                 osc.frequency.setValueAtTime(200, now);
                 osc.frequency.setValueAtTime(150, now + 0.05);
                 osc.frequency.setValueAtTime(200, now + 0.1);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
-                osc.start(now);
-                osc.stop(now + 0.15);
+                osc.start(now); osc.stop(now + 0.15);
             } else if (name === "error") {
                 osc.type = "sawtooth";
                 osc.frequency.setValueAtTime(150, now);
                 osc.frequency.exponentialRampToValueAtTime(100, now + 0.2);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
-                osc.start(now);
-                osc.stop(now + 0.2);
+                osc.start(now); osc.stop(now + 0.2);
             } else if (name === "win") {
                 osc.type = "triangle";
                 osc.frequency.setValueAtTime(400, now);
@@ -324,8 +325,7 @@
                 osc.frequency.setValueAtTime(1200, now + 0.3);
                 gain.gain.setValueAtTime(volume, now);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
-                osc.start(now);
-                osc.stop(now + 0.5);
+                osc.start(now); osc.stop(now + 0.5);
             } else if (name === "spin") {
                 osc.type = "square";
                 for (let i = 0; i < 15; i++) {
@@ -336,14 +336,12 @@
                 }
                 gain.gain.setValueAtTime(volume * 0.5, now);
                 gain.gain.linearRampToValueAtTime(0, now + 2);
-                osc.start(now);
-                osc.stop(now + 2);
+                osc.start(now); osc.stop(now + 2);
             } else if (name === "place") {
                 osc.type = "sine";
                 osc.frequency.setValueAtTime(300, now);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
-                osc.start(now);
-                osc.stop(now + 0.08);
+                osc.start(now); osc.stop(now + 0.08);
             } else if (name === "buy") {
                 osc.type = "triangle";
                 osc.frequency.setValueAtTime(1500, now);
@@ -351,30 +349,48 @@
                 osc.frequency.setValueAtTime(2500, now + 0.16);
                 gain.gain.setValueAtTime(volume * 0.8, now);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-                osc.start(now);
-                osc.stop(now + 0.3);
-            } else if (name === "sleep") {
-                osc.type = "square";
-                osc.frequency.value = 4000;
-                gain.gain.setValueAtTime(0, now);
-                for (let i = 0; i < 6; i++) {
-                    const t = now + i * 0.15;
-                    gain.gain.setValueAtTime(volume * 0.2, t);
-                    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.05);
-                    osc.frequency.setValueAtTime(4000, t);
-                    osc.frequency.exponentialRampToValueAtTime(5000, t + 0.05);
-                }
-                osc.start(now);
-                osc.stop(now + 1.0);
-            } else {
-                osc.type = "sine";
-                osc.frequency.setValueAtTime(400, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-                osc.start(now);
-                osc.stop(now + 0.1);
+                osc.start(now); osc.stop(now + 0.3);
             }
-        } catch (e) {
-            console.warn("Audio error:", e);
+        } catch (e) { console.warn("Audio error:", e); }
+    }
+
+    // Фоновая колыбельная (сверчки)
+    function startSleepSound() {
+        if (!state.soundEnabled) return;
+        try {
+            initAudio();
+            if (sleepSource) return; // уже играет
+
+            sleepSource = audioCtx.createBufferSource();
+            // Создаем буфер на 2 секунды
+            const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 2, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            // Заполняем шумом с низкой частотой (сверчки)
+            for (let i = 0; i < buffer.length; i++) {
+                const t = i / audioCtx.sampleRate;
+                const chirp = Math.sin(2 * Math.PI * 600 * t) * (Math.sin(2 * Math.PI * 4 * t) > 0 ? 1 : 0);
+                data[i] = chirp * 0.05; 
+            }
+            sleepSource.buffer = buffer;
+            sleepSource.loop = true;
+            
+            sleepGain = audioCtx.createGain();
+            sleepGain.gain.value = 0; // Начинаем с 0
+            sleepGain.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 1); // Плавное появление
+            
+            sleepSource.connect(sleepGain);
+            sleepGain.connect(audioCtx.destination);
+            sleepSource.start();
+        } catch(e) { console.warn(e); }
+    }
+
+    function stopSleepSound() {
+        if (sleepGain && audioCtx) {
+            sleepGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.5);
+            setTimeout(() => {
+                if (sleepSource) { sleepSource.stop(); sleepSource = null; }
+                sleepGain = null;
+            }, 500);
         }
     }
 
@@ -450,6 +466,11 @@
 
         if (adminBtn) adminBtn.classList.toggle("hidden", !isAdmin());
         actionButtons.forEach((btn) => { btn.disabled = sleeping; });
+        if (sleeping) {
+            startSleepSound();
+        } else {
+            stopSleepSound();
+        }
     }
 
     function showOnboarding() {
@@ -764,7 +785,7 @@
         if (id === "tea") {
             state.teaCount = (state.teaCount || 0) + 1;
         }
-        playSound("eat", 0.6);
+        playSound("eat", 0.15);
         save();
         feedModalEl.classList.add("hidden");
         render();
