@@ -58,7 +58,6 @@
 
             list.appendChild(row);
 
-            // Привязка кнопки "Забрать"
             if (unlocked && !hasReward) {
                 const btn = document.getElementById(`claim_${ach.id}`);
                 if (btn) {
@@ -68,13 +67,14 @@
                             App.save();
                             App.notify("🎁 Награда получена! Скин добавлен в инвентарь.");
                             App.hapticNotify("success");
-                            renderAchievements(); // перерисовать
+                            renderAchievements();
                         }
                     });
                 }
             }
         }
     }
+
     function bind() {
         $("openMenu").addEventListener("click", () => {
             App.hideAll();
@@ -99,15 +99,6 @@
             App.hideAll();
             $("achievements").classList.remove("hidden");
             renderAchievements();
-        });
-
-        $("soundToggle").addEventListener("click", () => {
-            const state = App.getState();
-            state.soundEnabled = !state.soundEnabled;
-            App.save();
-            $("soundIcon").textContent = state.soundEnabled ? "🔊" : "🔇";
-            if (state.soundEnabled) App.playSound("click");
-            App.hapticImpact("light");
         });
 
         $("achClose").addEventListener("click", () => {
