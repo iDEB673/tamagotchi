@@ -127,11 +127,20 @@
         if (prize.type === "coins_small" || prize.type === "coins_med" || prize.type === "coins_big" || prize.type === "coins_tiny") {
             const coins = prize.coins;
             if (App.isOnline()) {
-                state.coins += coins;
+                try {
+                    // Отправляем запрос на сервер, чтобы монеты сохранились в БД
+                    const res = await App.apiFetch("/api/game/reward", { 
+                        method: "POST", 
+                        body: JSON.stringify({ game: "casino", score: coins }) 
+                    });
+                    state.coins = res.coins;
+                } catch (e) {
+                    if (e.message === "OFFLINE") state.coins += coins;
+                    else console.warn("Casino coin sync failed:", e);
+                }
             } else {
                 state.coins += coins;
             }
-            App.playSound("buy"); // <--- ЗВУК КАССЫ ПРИ ВЫИГРЫШЕ
             titleText = "Монеты!";
             subText = `Ты выиграл ${coins} 💰`;
         } else if (prize.type === "food") {

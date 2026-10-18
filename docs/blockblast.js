@@ -274,7 +274,7 @@
         const state = App.getState();
         if (App.isOnline()) {
             try {
-                const res = await App.apiFetch("/api/game/reward", { method: "POST", body: JSON.stringify({ game: "blockblast", score }) });
+                const res = await App.apiFetch("/api/game/reward", { method: "POST", body: JSON.stringify({ game: "blockblast", score, level }) });
                 coins = res.reward;
                 state.coins = res.coins;
             } catch (e) { if (e.message === "OFFLINE") state.coins += coins; }

@@ -26,6 +26,7 @@ class SpendRequest(BaseModel):
 class GameRewardRequest(BaseModel):
     game: str
     score: int
+    level: str | None = None
 
 
 @router.get("/me")
@@ -114,14 +115,12 @@ async def game_reward(
     if payload.game == "clicker":
         reward = 5 if payload.score >= 30 else 0
     elif payload.game == "blockblast":
-        if payload.score >= 300:
-            reward = 20
-        elif payload.score >= 150:
-            reward = 10
-        elif payload.score >= 50:
-            reward = 5
-        else:
-            reward = 2
+        if payload.level == "hard":
+            reward = 75 if payload.score >= 500 else 50 if payload.score >= 300 else 35 if payload.score >= 200 else 22 if payload.score >= 150 else 14 if payload.score >= 100 else 8 if payload.score >= 50 else 3
+        elif payload.level == "normal":
+            reward = 40 if payload.score >= 500 else 25 if payload.score >= 300 else 17 if payload.score >= 200 else 11 if payload.score >= 150 else 7 if payload.score >= 100 else 4 if payload.score >= 50 else 1
+        else: # easy
+            reward = 15 if payload.score >= 500 else 10 if payload.score >= 300 else 7 if payload.score >= 200 else 5 if payload.score >= 150 else 3 if payload.score >= 100 else 2 if payload.score >= 50 else 0
     elif payload.game == "sudoku":
         if payload.score == 1:
             reward = 10
@@ -131,8 +130,12 @@ async def game_reward(
             reward = 50
         else:
             reward = 0
+    elif payload.game == "casino":
+        # Ограничиваем сверху, чтобы нельзя было накрутить читами
+        reward = min(payload.score, 500)    
     else:
         raise HTTPException(400, f"Unknown game: {payload.game}")
+    
 
     user.coins += reward
     await session.commit()

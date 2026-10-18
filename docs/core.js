@@ -272,7 +272,6 @@
     // ---------- Аудио-менеджер (Web Audio API) ----------
     let audioCtx = null;
     let sleepSource = null;
-    let sleepGain = null;
 
     function initAudio() {
         if (!audioCtx) {
@@ -353,43 +352,68 @@
         } catch (e) { console.warn("Audio error:", e); }
     }
 
-    // Фоновая колыбельная (сверчки)
+    // ---------- Фоновый звук сна ----------
+    let sleepNodes = [];
+    let sleepGain = null;
+
     function startSleepSound() {
         if (!state.soundEnabled) return;
         try {
             initAudio();
-            if (sleepSource) return; // уже играет
+            if (sleepNodes.length > 0) return; // Уже играет
 
-            sleepSource = audioCtx.createBufferSource();
-            // Создаем буфер на 2 секунды
-            const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 2, audioCtx.sampleRate);
-            const data = buffer.getChannelData(0);
-            // Заполняем шумом с низкой частотой (сверчки)
-            for (let i = 0; i < buffer.length; i++) {
-                const t = i / audioCtx.sampleRate;
-                const chirp = Math.sin(2 * Math.PI * 600 * t) * (Math.sin(2 * Math.PI * 4 * t) > 0 ? 1 : 0);
-                data[i] = chirp * 0.05; 
+            const masterGain = audioCtx.createGain();
+            masterGain.gain.value = 0;
+            masterGain.connect(audioCtx.destination);
+
+            // Создаём 3 "сверчка"
+            for (let i = 0; i < 3; i++) {
+                const osc = audioCtx.createOscillator();
+                osc.type = "sine"; // Мягкая волна
+                osc.frequency.value = 2200 + i * 300; // 2200-2800 Гц (не писк)
+
+                const lfo = audioCtx.createOscillator();
+                lfo.type = "sine";
+                lfo.frequency.value = 6 + i * 3; // 6-12 Гц (медленная трель)
+
+                const lfoGain = audioCtx.createGain();
+                lfoGain.gain.value = 0.6; // Глубина мерцания
+
+                const oscGain = audioCtx.createGain();
+                oscGain.gain.value = 0.04; // Очень тихо, на фоне
+
+                lfo.connect(lfoGain);
+                lfoGain.connect(oscGain.gain);
+
+                osc.connect(oscGain);
+                oscGain.connect(masterGain);
+
+                osc.start();
+                lfo.start();
+                sleepNodes.push(osc, lfo);
             }
-            sleepSource.buffer = buffer;
-            sleepSource.loop = true;
-            
-            sleepGain = audioCtx.createGain();
-            sleepGain.gain.value = 0; // Начинаем с 0
-            sleepGain.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 1); // Плавное появление
-            
-            sleepSource.connect(sleepGain);
-            sleepGain.connect(audioCtx.destination);
-            sleepSource.start();
+
+            // Плавное появление за 2 секунды
+            masterGain.gain.linearRampToValueAtTime(0.4, audioCtx.currentTime + 2);
+            sleepNodes.push(masterGain);
+            sleepGain = masterGain;
+
         } catch(e) { console.warn(e); }
     }
 
     function stopSleepSound() {
         if (sleepGain && audioCtx) {
-            sleepGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.5);
+            sleepGain.gain.cancelScheduledValues(audioCtx.currentTime);
+            sleepGain.gain.setValueAtTime(sleepGain.gain.value, audioCtx.currentTime);
+            sleepGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 1);
+            
             setTimeout(() => {
-                if (sleepSource) { sleepSource.stop(); sleepSource = null; }
+                sleepNodes.forEach(node => {
+                    try { node.stop(); } catch(e){}
+                });
+                sleepNodes = [];
                 sleepGain = null;
-            }, 500);
+            }, 1000);
         }
     }
 
