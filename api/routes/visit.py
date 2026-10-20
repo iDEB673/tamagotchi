@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.deps import get_current_user
@@ -34,6 +34,32 @@ async def _get_equipped_item_id(user_id: int, session: AsyncSession) -> str | No
         .limit(1)
     )
     return result.scalar_one_or_none()
+
+
+@router.get("/visit/search/{pet_name}")
+async def search_pet_by_name(
+    pet_name: str,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    name = pet_name.strip()
+    if not name:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Pet not found",
+        )
+
+    result = await session.execute(
+        select(Pet.user_id).where(func.lower(Pet.name) == name.lower())
+    )
+    user_id = result.scalar_one_or_none()
+    if user_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Pet not found",
+        )
+
+    return {"user_id": user_id}
 
 
 @router.get("/visit/{target_user_id}")

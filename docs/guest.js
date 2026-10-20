@@ -96,11 +96,30 @@
     }
 
     function bind() {
-        $("visitFriendBtn").addEventListener("click", () => {
-            const id = $("guestIdInput").value.trim();
-            if (!id) return App.notify("Введи ID друга");
-            if (id === App.getUserId().toString()) return App.notify("Это твой ID. Введи ID друга.");
-            openGuestScreen(id);
+        $("visitFriendBtn").addEventListener("click", async () => {
+            const name = $("guestNameInput").value.trim();
+            if (!name) return App.notify("Введи имя питомца");
+            
+            const btn = $("visitFriendBtn");
+            const originalText = btn.textContent;
+            btn.textContent = "...";
+            btn.disabled = true;
+
+            try {
+                // Стучимся в новый эндпоинт поиска по имени
+                const res = await App.apiFetch(`/api/visit/search/${encodeURIComponent(name)}`);
+                $("guestNameInput").value = ""; // Очищаем поле
+                openGuestScreen(res.user_id);   // Открываем гостя по ID
+            } catch (e) {
+                if (e.message.includes("404")) {
+                    App.notify("Питомец с таким именем не найден");
+                } else {
+                    App.notify("Ошибка: " + e.message);
+                }
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
         });
     }
 
