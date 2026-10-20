@@ -803,3 +803,30 @@ body.night-mode .header {
 #soundToggle:active {
     background: var(--bg-card);
 }
+
+/* ---------- Поглаживание питомца ---------- */
+.pet {
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+.pet__stack {
+    transition: transform 0.1s ease;
+}
+
+.pet__stack:active {
+    transform: scale(0.95); /* Питомец сжимается, как будто его гладят */
+}
+
+.floating-heart {
+    position: absolute;
+    font-size: 28px;
+    pointer-events: none;
+    animation: floatUp 1s ease-out forwards;
+    z-index: 10;
+}
+
+@keyframes floatUp {
+    0% { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(-50px) scale(1.5); }
+}

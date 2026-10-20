@@ -348,6 +348,15 @@
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
                 osc.start(now); osc.stop(now + 0.3);
             }
+            else if (name === "pet") {
+                osc.type = "sine";
+                osc.frequency.setValueAtTime(600, now);
+                osc.frequency.exponentialRampToValueAtTime(900, now + 0.1);
+                gain.gain.setValueAtTime(volume, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                osc.start(now);
+                osc.stop(now + 0.15);
+            }
         } catch (e) { console.warn("Audio error:", e); }
     }
 
@@ -551,6 +560,50 @@
             }
             
             if (tg) tg.HapticFeedback?.impactOccurred("light");
+        });
+    }
+
+        // ---------- Поглаживание питомца ----------
+    let lastPetTime = 0;
+    const petEl = document.querySelector(".pet");
+
+    if (petEl) {
+        petEl.addEventListener("pointerdown", (e) => {
+            if (isSleeping()) {
+                // Если спит, можно только шикнуть или ничего не делать
+                playSound("error", 0.1);
+                return; 
+            }
+
+            const now = Date.now();
+            if (now - lastPetTime < 1500) return; // Кулдаун 1.5 секунды
+            lastPetTime = now;
+
+            // Звук и вибрация
+            playSound("pet", 0.3);
+            if (tg) tg.HapticFeedback?.impactOccurred("soft");
+
+            // Логика статов (если радость не максимум)
+            if (state.stats.happiness < 100) {
+                state.stats.happiness = Math.min(100, state.stats.happiness + 2);
+                save();
+                render();
+            }
+
+            // Визуальный эффект (сердечко)
+            const heart = document.createElement("div");
+            heart.className = "floating-heart";
+            heart.textContent = ["❤️", "✨", "💖", "🌸"][Math.floor(Math.random() * 4)];
+            
+            // Позиционируем сердечко там, где тапнули
+            const rect = petEl.getBoundingClientRect();
+            heart.style.left = (e.clientX - rect.left - 15) + "px";
+            heart.style.top = (e.clientY - rect.top - 15) + "px";
+            
+            petEl.appendChild(heart);
+            
+            // Удаляем сердечко через секунду
+            setTimeout(() => heart.remove(), 1000);
         });
     }
     $("shopClose").addEventListener("click", () => showGame());
