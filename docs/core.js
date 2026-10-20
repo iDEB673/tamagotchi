@@ -1,4 +1,25 @@
 (() => {
+    let errorAlertShown = false;
+
+    window.addEventListener("error", (event) => {
+        if (errorAlertShown) return;
+        errorAlertShown = true;
+        alert(
+            "JS error: " + event.message +
+            "\nFile: " + event.filename +
+            "\nLine: " + event.lineno
+        );
+    });
+
+    window.addEventListener("unhandledrejection", (event) => {
+        if (errorAlertShown) return;
+        errorAlertShown = true;
+        const reason = event.reason instanceof Error
+            ? event.reason.message
+            : String(event.reason);
+        alert("Unhandled promise rejection: " + reason);
+    });
+
     const tg = window.Telegram?.WebApp;
     if (tg) { tg.ready(); tg.expand(); }
 
