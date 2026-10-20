@@ -533,11 +533,15 @@
     async function applyAction(name) {
         const action = ACTIONS[name];
         if (!action || isSleeping()) return;
+
         if (action.cost > 0) {
             if (state.coins < action.cost) { alert(`Нужно ${action.cost} монет.`); return; }
             if (isOnline()) {
                 try {
-                    const res = await apiFetch("/api/coins/spend", { method: "POST", body: JSON.stringify({ amount: action.cost }) });
+                    const res = await apiFetch("/api/coins/spend", { 
+                        method: "POST", 
+                        body: JSON.stringify({ amount: action.cost }) 
+                    });
                     state.coins = res.coins;
                 } catch (e) {
                     if (e.message === "OFFLINE") state.coins -= action.cost;
@@ -545,13 +549,17 @@
                 }
             } else state.coins -= action.cost;
         }
+
         for (const [key, delta] of Object.entries(action)) {
             if (key === "cost") continue;
             state.stats[key] = Math.max(0, Math.min(100, state.stats[key] + delta));
         }
-        save(); render();
+
+        save();
+        render();
         if (tg) tg.HapticFeedback?.impactOccurred("light");
-        await pushStatsToServer();
+        
+        await pushStatsToServer(); // <--- ВОТ ЭТА СТРОКА КРИТИЧЕСКИ ВАЖНА
     }
 
     actionButtons.forEach((btn) => {
