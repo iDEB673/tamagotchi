@@ -322,6 +322,7 @@
         level = levelKey;
         infinite = !!inf;
         App.save();
+        App.pushStatsToServer();
         App.hideAll();
         $("blockblast").classList.remove("hidden");
         reset();
@@ -356,6 +357,7 @@
             if (state.stats.energy < ENERGY_COST) { App.notify(`Нужно ${ENERGY_COST} энергии.`); return; }
             state.stats.energy -= ENERGY_COST;
             App.save();
+            App.pushStatsToServer();
             $("bbResult").classList.add("hidden");
             infinite = false;
             reset();
@@ -367,6 +369,7 @@
             if (state.stats.energy < ENERGY_COST) { App.notify(`Нужно ${ENERGY_COST} энергии.`); return; }
             state.stats.energy -= ENERGY_COST;
             App.save();
+            App.pushStatsToServer();
             $("bbWinModal").classList.add("hidden");
             infinite = false;
             reset();
@@ -377,6 +380,7 @@
             if (state.stats.energy < ENERGY_COST) { App.notify(`Нужно ${ENERGY_COST} энергии.`); return; }
             state.stats.energy -= ENERGY_COST;
             App.save();
+            App.pushStatsToServer();
             $("bbWinModal").classList.add("hidden");
             infinite = true;
             reset();

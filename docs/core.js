@@ -269,6 +269,7 @@
         finishNightSleep(hours);
         render();
         if (tg) tg.HapticFeedback?.notificationOccurred("success");
+        pushStatsToServer();
     }
 
     function checkAchievements() {
@@ -501,19 +502,33 @@
         hideAll();
         chooserEl.classList.remove("hidden");
     }
-    async function syncStatsToServer() {
-        if (!isOnline()) return;
-        try {
-            await apiFetch("/api/pet/sync", {
-                method: "POST",
-                body: JSON.stringify({
-                    stats: state.stats,
-                    equipped_item_id: state.equipped || null
-                })
-            });
-        } catch (e) {
-            console.warn("Не удалось синхронизировать статы:", e);
-        }
+    let statsPushQueue = Promise.resolve();
+
+    function pushStatsToServer() {
+        if (!isOnline()) return Promise.resolve();
+
+        const payload = JSON.stringify({
+            stats: {
+                hunger: state.stats.hunger,
+                happiness: state.stats.happiness,
+                energy: state.stats.energy,
+                cleanliness: state.stats.cleanliness,
+            },
+            equipped_item_id: state.equipped || null,
+        });
+
+        statsPushQueue = statsPushQueue.then(async () => {
+            try {
+                await apiFetch("/api/pet/sync", {
+                    method: "POST",
+                    body: payload,
+                });
+            } catch (e) {
+                console.warn("Не удалось синхронизировать статы:", e);
+            }
+        });
+
+        return statsPushQueue;
     }
     async function applyAction(name) {
         const action = ACTIONS[name];
@@ -534,8 +549,9 @@
             if (key === "cost") continue;
             state.stats[key] = Math.max(0, Math.min(100, state.stats[key] + delta));
         }
-        save(); render(); syncStatsToServer();
+        save(); render();
         if (tg) tg.HapticFeedback?.impactOccurred("light");
+        await pushStatsToServer();
     }
 
     actionButtons.forEach((btn) => {
@@ -616,6 +632,7 @@
             state.stats.happiness = Math.max(0, Math.min(100, state.stats.happiness + delta));
             save();
             render();
+            pushStatsToServer();
 
             // Звук и вибрация
             if (isAngry) {
@@ -781,16 +798,18 @@
             playSound("buy"); // <--- ЗВУК ПОКУПКИ
             save(); renderShop();
             if (tg) tg.HapticFeedback?.notificationOccurred("success");
+            pushStatsToServer();
         };
         if (isOnline()) {
             apiFetch("/api/shop/buy", { method: "POST", body: JSON.stringify({ item_id: id }) })
-                .then(res => {
+                .then(async res => {
                     state.coins = res.coins;
                     state.owned.push(id);
                     state.equipped = id;
                     playSound("buy"); // <--- ЗВУК ПОКУПКИ
                     save(); renderShop();
                     if (tg) tg.HapticFeedback?.notificationOccurred("success");
+                    await pushStatsToServer();
                 })
                 .catch(e => {
                     if (e.message === "OFFLINE") doLocal();
@@ -801,21 +820,14 @@
     async function equipItem(id) {
         if (!state.owned.includes(id)) return;
         state.equipped = id;
-        save(); syncStatsToServer(); renderShop();
+        save(); renderShop();
         if (tg) tg.HapticFeedback?.impactOccurred("light");
-        if (isOnline()) {
-            try { await apiFetch("/api/inventory/equip", { method: "POST", body: JSON.stringify({ item_id: id }) }); }
-            catch (e) { console.warn(e); }
-        }
+        await pushStatsToServer();
     }
     async function unequipItem() {
-        const prev = state.equipped;
         state.equipped = null;
         save(); renderShop();
-        if (isOnline() && prev) {
-            try { await apiFetch("/api/inventory/equip", { method: "POST", body: JSON.stringify({ item_id: prev }) }); }
-            catch (e) { console.warn(e); }
-        }
+        await pushStatsToServer();
     }
 
     // ---------- Кормление ----------
@@ -852,7 +864,7 @@
             list.appendChild(row);
         }
     }
-    function eatFood(id) {
+    async function eatFood(id) {
         const food = FOOD_ITEMS[id];
         if (!food) return;
         if (!state.food[id] || state.food[id] <= 0) return;
@@ -866,11 +878,11 @@
         }
         playSound("eat", 0.15);
         save();
-        syncStatsToServer();
         feedModalEl.classList.add("hidden");
         render();
         checkAchievements();
         if (tg) tg.HapticFeedback?.impactOccurred("light");
+        await pushStatsToServer();
     }
 
     $("feedCancel").addEventListener("click", () => feedModalEl.classList.add("hidden"));
@@ -939,6 +951,7 @@
                 state.sleepUntil = null; state.sleepGain = 0;
                 save(); render();
                 if (tg) tg.HapticFeedback?.notificationOccurred("success");
+                pushStatsToServer();
                 alert("Питомец проснулся! Энергия восстановлена.");
                 return;
             }
@@ -1153,29 +1166,30 @@
 
     async function syncFromServer() {
         if (!isOnline()) return;
-        
-        try { const me = await apiFetch("/api/me"); state.coins = me.coins; } catch (e) { console.warn(e); }
-        
+
+        try {
+            const me = await apiFetch("/api/me");
+            state.coins = me.coins;
+        } catch (e) { console.warn(e); }
+
         try {
             const data = await apiFetch("/api/inventory/granted");
             for (const it of data.items) {
                 if (!state.owned.includes(it.item_id)) state.owned.push(it.item_id);
-                if (it.equipped && !state.equipped) state.equipped = it.item_id;
             }
+            const equipped = data.items.find((it) => it.equipped);
+            state.equipped = equipped ? equipped.item_id : null;
         } catch (e) { console.warn(e); }
 
         let serverName = null;
-        try { 
-            const pet = await apiFetch("/api/pet"); 
+        try {
+            const pet = await apiFetch("/api/pet");
             if (pet.name) serverName = pet.name;
-            
-            // БЕРЕМ СТАТЫ С СЕРВЕРА (а не отправляем свои)
-            if (pet.hunger !== undefined) {
-                state.stats.hunger = pet.hunger;
-                state.stats.happiness = pet.happiness;
-                state.stats.energy = pet.energy;
-                state.stats.cleanliness = pet.cleanliness;
-            }
+
+            state.stats.hunger = pet.hunger;
+            state.stats.happiness = pet.happiness;
+            state.stats.energy = pet.energy;
+            state.stats.cleanliness = pet.cleanliness;
         } catch (e) { console.warn(e); }
 
         if (serverName && serverName.toLowerCase() !== "питомец") {
@@ -1183,14 +1197,12 @@
         } else {
             state.petName = null;
         }
-        
+
         save();
+        render();
+
         if (!state.petName) showOnboarding();
         else showGame();
-        
-        // ОТПРАВЛЯЕМ НА СЕРВЕР ТОЛЬКО ЕСЛИ ИЗМЕНИЛОСЬ ЧТО-ТО ЛОКАЛЬНО (например, первый вход)
-        // Но теперь мы это делаем только при действиях, так что здесь убираем принудительный sync.
-        // await syncStatsToServer(); 
     }
 
     // ---------- Экспорт для остальных модулей ----------
@@ -1200,6 +1212,7 @@
         tg,
         // API
         apiFetch, isOnline, getUserId: getMyUserId, isAdmin,
+        pushStatsToServer,
         // State
         getState: () => state,
         setState: (s) => { state = s; save(); },

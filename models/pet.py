@@ -1,11 +1,17 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, DateTime, ForeignKey, String, func
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, Field
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.db import Base
+from api.deps import get_current_user
+from core.db import get_session
+from models import InventoryItem, Pet, User
+from services import pet_logic
 
+router = APIRouter()
 if TYPE_CHECKING:
     from models.user import User
 

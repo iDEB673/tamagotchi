@@ -404,6 +404,7 @@
             }
             state.stats.energy -= SD_ENERGY_COST;
             App.save();
+            App.pushStatsToServer();
 
             sdCurrentLevel = levelKey;
             sdMistakes = 0;
