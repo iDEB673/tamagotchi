@@ -1,25 +1,4 @@
 (() => {
-    let errorAlertShown = false;
-
-    window.addEventListener("error", (event) => {
-        if (errorAlertShown) return;
-        errorAlertShown = true;
-        alert(
-            "JS error: " + event.message +
-            "\nFile: " + event.filename +
-            "\nLine: " + event.lineno
-        );
-    });
-
-    window.addEventListener("unhandledrejection", (event) => {
-        if (errorAlertShown) return;
-        errorAlertShown = true;
-        const reason = event.reason instanceof Error
-            ? event.reason.message
-            : String(event.reason);
-        alert("Unhandled promise rejection: " + reason);
-    });
-
     const tg = window.Telegram?.WebApp;
     if (tg) { tg.ready(); tg.expand(); }
 
@@ -813,7 +792,7 @@
     async function equipItem(id) {
         if (!state.owned.includes(id)) return;
         state.equipped = id;
-        save(); renderShop();
+        save(); syncStatsToServer(); renderShop();
         if (tg) tg.HapticFeedback?.impactOccurred("light");
         if (isOnline()) {
             try { await apiFetch("/api/inventory/equip", { method: "POST", body: JSON.stringify({ item_id: id }) }); }
@@ -1194,6 +1173,9 @@
         save();
         if (!state.petName) showOnboarding();
         else showGame();
+        
+        // ПРИНУДИТЕЛЬНО ОТПРАВЛЯЕМ ЛОКАЛЬНЫЕ СТАТЫ НА СЕРВЕР ПРИ ЗАГРУЗКЕ
+        syncStatsToServer();
     }
 
     // ---------- Экспорт для остальных модулей ----------
