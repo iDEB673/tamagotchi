@@ -1,17 +1,11 @@
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import TYPE_CHECKING
 
-from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field
-from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import BigInteger, DateTime, ForeignKey, String, func
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from api.deps import get_current_user
-from core.db import get_session
-from models import InventoryItem, Pet, User
-from services import pet_logic
+from core.db import Base
 
-router = APIRouter()
 if TYPE_CHECKING:
     from models.user import User
 
@@ -29,9 +23,12 @@ class Pet(Base):
     energy: Mapped[int] = mapped_column(default=100)
     cleanliness: Mapped[int] = mapped_column(default=100)
     health: Mapped[int] = mapped_column(default=100)
+    
+    # Вот та колонка, которую мы недавно добавили
     last_petted_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    
     last_update: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
