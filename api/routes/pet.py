@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.deps import get_current_user
@@ -68,7 +68,9 @@ async def set_pet_name(
         raise HTTPException(status_code=400, detail="Это имя зарезервировано")
 
     existing = await session.execute(
-        select(Pet).where(Pet.name == name, Pet.user_id != user.id)
+        select(Pet.id)
+        .where(func.lower(Pet.name) == name.lower(), Pet.user_id != user.id)
+        .limit(1)
     )
     if existing.scalar_one_or_none():
         raise HTTPException(

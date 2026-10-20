@@ -43,14 +43,17 @@ async def search_pet_by_name(
     session: AsyncSession = Depends(get_session),
 ):
     name = pet_name.strip()
-    if not name:
+    if not name or name.lower() == "питомец":
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Pet not found",
         )
 
     result = await session.execute(
-        select(Pet.user_id).where(func.lower(Pet.name) == name.lower())
+        select(Pet.user_id)
+        .where(func.lower(Pet.name) == name.lower())
+        .order_by(Pet.id)
+        .limit(1)
     )
     user_id = result.scalar_one_or_none()
     if user_id is None:
