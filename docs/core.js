@@ -184,18 +184,23 @@
     }
 
     async function finishNightSleep(hours) {
-        const before = state.nightSleepEnergyBefore || 0;
-        const restored = Math.min(100, Math.round(before + hours * 30));
-        state.stats.energy = restored;
-        // Медленный расход за время сна
-        state.stats.hunger = Math.max(0, state.stats.hunger - hours * 0.5);
-        state.stats.cleanliness = Math.max(0, state.stats.cleanliness - hours * 0.5);
-        state.stats.happiness = Math.max(0, state.stats.happiness - hours * 0.5);
-        state.nightSleepStart = null;
-        state.nightSleepWake = null;
-        state.nightSleepEnergyBefore = 0;
-        save();
-        await pushStatsToServer();
+        try {
+            const before = state.nightSleepEnergyBefore || 0;
+            const restored = Math.min(100, Math.round(before + hours * 30));
+            state.stats.energy = restored;
+            // Медленный расход за время сна
+            state.stats.hunger = Math.max(0, state.stats.hunger - hours * 0.5);
+            state.stats.cleanliness = Math.max(0, state.stats.cleanliness - hours * 0.5);
+            state.stats.happiness = Math.max(0, state.stats.happiness - hours * 0.5);
+            state.nightSleepStart = null;
+            state.nightSleepWake = null;
+            state.nightSleepEnergyBefore = 0;
+            save();
+        } catch (e) {
+            console.warn("finishNightSleep failed:", e);
+        } finally {
+            await pushStatsToServer();
+        }
     }
 
     const $ = (id) => document.getElementById(id);
@@ -267,10 +272,16 @@
             return;
         }
         if (!confirm("Разбудить? Энергия восстановится частично.")) return;
-        await finishNightSleep(hours);
-        render();
-        if (tg) tg.HapticFeedback?.notificationOccurred("success");
-        await pushStatsToServer();
+
+        try {
+            await finishNightSleep(hours);
+            render();
+            if (tg) tg.HapticFeedback?.notificationOccurred("success");
+        } catch (e) {
+            console.warn("tryWakeUp failed:", e);
+        } finally {
+            await pushStatsToServer();
+        }
     }
 
     function checkAchievements() {
@@ -505,8 +516,21 @@
     }
     let statsPushQueue = Promise.resolve();
 
+    function withTimeout(promise, ms) {
+        return new Promise((resolve, reject) => {
+            const timer = setTimeout(() => reject(new Error("sync timeout")), ms);
+            promise.then(
+                (value) => { clearTimeout(timer); resolve(value); },
+                (error) => { clearTimeout(timer); reject(error); }
+            );
+        });
+    }
+
     function pushStatsToServer() {
-        if (!isOnline()) return Promise.resolve();
+        if (!isOnline()) {
+            console.warn("Sync skipped: Telegram initData is empty");
+            return Promise.resolve();
+        }
 
         const toIso = (value) => {
             if (value === null || value === undefined) return null;
@@ -529,16 +553,21 @@
             night_sleep_wake: toIso(state.nightSleepWake),
         });
 
-        statsPushQueue = statsPushQueue.then(async () => {
-            try {
-                await apiFetch("/api/pet/sync", {
-                    method: "POST",
-                    body: payload,
-                });
-            } catch (e) {
-                console.warn("Не удалось синхронизировать статы:", e);
-            }
-        });
+        statsPushQueue = statsPushQueue
+            .catch(() => {})
+            .then(async () => {
+                try {
+                    await withTimeout(
+                        apiFetch("/api/pet/sync", {
+                            method: "POST",
+                            body: payload,
+                        }),
+                        10000
+                    );
+                } catch (e) {
+                    console.warn("Не удалось синхронизировать статы:", e);
+                }
+            });
 
         return statsPushQueue;
     }
@@ -927,27 +956,46 @@
 
     async function startNightSleep() {
         if (isSleeping()) return;
-        state.nightSleepStart = Date.now();
-        state.nightSleepWake = state.nightSleepStart + 8 * 3600 * 1000;
-        state.nightSleepEnergyBefore = state.stats.energy;
-        playSound("sleep", 0.7); // <--- ЗВУК СВЕРЧКОВ
-        save();
-        sleepModalEl.classList.add("hidden");
-        render();
-        if (tg) tg.HapticFeedback?.notificationOccurred("success");
-        await pushStatsToServer();
+
+        try {
+            state.nightSleepStart = Date.now();
+            state.nightSleepWake = state.nightSleepStart + 8 * 3600 * 1000;
+            state.nightSleepEnergyBefore = state.stats.energy;
+            playSound("sleep", 0.7); // <--- ЗВУК СВЕРЧКОВ
+            save();
+            sleepModalEl.classList.add("hidden");
+            render();
+            if (tg) tg.HapticFeedback?.notificationOccurred("success");
+        } catch (e) {
+            console.warn("startNightSleep failed:", e);
+        } finally {
+            await pushStatsToServer();
+        }
     }
+
     async function startSleep(durationMs, gainRatio) {
-        state.sleepUntil = Date.now() + durationMs;
-        state.sleepGain = gainRatio;
-        state.sleepStartedAt = Date.now();
-        playSound("sleep"); // <--- ЗВУК СВЕРЧКОВ
-        save();
-        sleepModalEl.classList.add("hidden");
-        render();
-        startSleepTicker();
-        notifyServerSleep(durationMs);
-        await pushStatsToServer();
+        try {
+            state.sleepUntil = Date.now() + durationMs;
+            state.sleepGain = gainRatio;
+            state.sleepStartedAt = Date.now();
+            playSound("sleep"); // <--- ЗВУК СВЕРЧКОВ
+            save();
+            sleepModalEl.classList.add("hidden");
+            render();
+            startSleepTicker();
+
+            try {
+                notifyServerSleep(durationMs).catch((e) => {
+                    console.warn("notifyServerSleep failed:", e);
+                });
+            } catch (e) {
+                console.warn("notifyServerSleep failed:", e);
+            }
+        } catch (e) {
+            console.warn("startSleep failed:", e);
+        } finally {
+            await pushStatsToServer();
+        }
     }
     async function notifyServerSleep(durationMs) {
         const userId = tg?.initDataUnsafe?.user?.id;

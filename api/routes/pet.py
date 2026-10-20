@@ -100,6 +100,7 @@ async def get_pet(
     if pet is None:
         raise HTTPException(status_code=404, detail="Pet not found")
 
+    pet_logic.process_sleep(pet)
     pet_logic.apply_decay(pet)
     await session.commit()
     await session.refresh(pet)

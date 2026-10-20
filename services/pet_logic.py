@@ -18,6 +18,49 @@ ACTIONS = {
 }
 
 
+def _to_utc(value: datetime | None) -> datetime | None:
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
+def process_sleep(pet: Pet, now: datetime | None = None) -> bool:
+    """Восстанавливает энергию за завершившиеся периоды сна."""
+    now = _to_utc(now) or datetime.now(timezone.utc)
+    changed = False
+
+    sleep_until = _to_utc(pet.sleep_until)
+    if sleep_until is not None and now >= sleep_until:
+        sleep_started_at = _to_utc(pet.sleep_started_at)
+        hours = 0.0
+        if sleep_started_at is not None:
+            hours = max(
+                0.0, (sleep_until - sleep_started_at).total_seconds() / 3600
+            )
+        pet.energy = min(100, round(pet.energy + hours * 30))
+        pet.sleep_until = None
+        pet.sleep_started_at = None
+        pet.sleep_gain = None
+        changed = True
+
+    night_sleep_wake = _to_utc(pet.night_sleep_wake)
+    if night_sleep_wake is not None and now >= night_sleep_wake:
+        night_sleep_start = _to_utc(pet.night_sleep_start)
+        hours = 0.0
+        if night_sleep_start is not None:
+            hours = max(
+                0.0, (night_sleep_wake - night_sleep_start).total_seconds() / 3600
+            )
+        pet.energy = min(100, round(pet.energy + hours * 30))
+        pet.night_sleep_start = None
+        pet.night_sleep_wake = None
+        changed = True
+
+    return changed
+
+
 def apply_decay(pet: Pet) -> None:
     """Считает, сколько статов утекло с момента last_update."""
     now = datetime.now(timezone.utc)
