@@ -4,7 +4,7 @@
 
     const ADMIN_ID = 5410929450;
 
-    const CURRENT_VERSION = "v0.9.0";
+    const CURRENT_VERSION = "v0.9.1";
     const CHANGELOG = [
         {
             version: "v0.9.0",
@@ -118,10 +118,19 @@
 
     function load() {
         try {
+            const savedVersion = localStorage.getItem(STORAGE_KEY + "_version");
+            // Если версия не совпадает (или ее нет), стираем старый кэш
+            if (savedVersion !== CURRENT_VERSION) {
+                console.warn("Версия изменилась, сбрасываем локальный кэш");
+                localStorage.removeItem(STORAGE_KEY);
+                localStorage.setItem(STORAGE_KEY + "_version", CURRENT_VERSION);
+                return null;
+            }
+
             const raw = localStorage.getItem(STORAGE_KEY);
             if (!raw) return null;
             const data = JSON.parse(raw);
-            // Миграция старых сейвов
+            // ... (твои старые проверки food, owned, achievements, teaCount и т.д.)
             if (!data.food) data.food = {};
             if (!data.owned) data.owned = [];
             if (!data.achievements) data.achievements = [];
@@ -1175,7 +1184,7 @@
         else showGame();
         
         // ПРИНУДИТЕЛЬНО ОТПРАВЛЯЕМ ЛОКАЛЬНЫЕ СТАТЫ НА СЕРВЕР ПРИ ЗАГРУЗКЕ
-        syncStatsToServer();
+        await syncStatsToServer();
     }
 
     // ---------- Экспорт для остальных модулей ----------
