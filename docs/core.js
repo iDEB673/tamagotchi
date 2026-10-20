@@ -492,7 +492,20 @@
         hideAll();
         chooserEl.classList.remove("hidden");
     }
-
+    async function syncStatsToServer() {
+        if (!isOnline()) return;
+        try {
+            await apiFetch("/api/pet/sync", {
+                method: "POST",
+                body: JSON.stringify({
+                    stats: state.stats,
+                    equipped_item_id: state.equipped || null
+                })
+            });
+        } catch (e) {
+            console.warn("Не удалось синхронизировать статы:", e);
+        }
+    }
     async function applyAction(name) {
         const action = ACTIONS[name];
         if (!action || isSleeping()) return;
@@ -512,7 +525,7 @@
             if (key === "cost") continue;
             state.stats[key] = Math.max(0, Math.min(100, state.stats[key] + delta));
         }
-        save(); render();
+        save(); render(); syncStatsToServer();
         if (tg) tg.HapticFeedback?.impactOccurred("light");
     }
 
@@ -844,6 +857,7 @@
         }
         playSound("eat", 0.15);
         save();
+        syncStatsToServer();
         feedModalEl.classList.add("hidden");
         render();
         checkAchievements();
