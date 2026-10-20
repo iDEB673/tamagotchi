@@ -13,6 +13,38 @@ from services import pet_logic
 router = APIRouter()
 
 
+def _as_utc(value: datetime | None) -> datetime | None:
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
+def _serialize_pet(pet: Pet) -> dict:
+    data = pet_logic.pet_to_dict(pet)
+    sleep_until = _as_utc(pet.sleep_until)
+    sleep_started_at = _as_utc(pet.sleep_started_at)
+    night_sleep_start = _as_utc(pet.night_sleep_start)
+    night_sleep_wake = _as_utc(pet.night_sleep_wake)
+    data.update(
+        {
+            "sleep_until": sleep_until.isoformat() if sleep_until else None,
+            "sleep_started_at": (
+                sleep_started_at.isoformat() if sleep_started_at else None
+            ),
+            "sleep_gain": pet.sleep_gain,
+            "night_sleep_start": (
+                night_sleep_start.isoformat() if night_sleep_start else None
+            ),
+            "night_sleep_wake": (
+                night_sleep_wake.isoformat() if night_sleep_wake else None
+            ),
+        }
+    )
+    return data
+
+
 class ActionRequest(BaseModel):
     action: str
 
@@ -41,6 +73,11 @@ class SyncStats(BaseModel):
 class SyncRequest(BaseModel):
     stats: SyncStats
     equipped_item_id: str | None = None
+    sleep_until: datetime | None = None
+    sleep_started_at: datetime | None = None
+    sleep_gain: float | None = None
+    night_sleep_start: datetime | None = None
+    night_sleep_wake: datetime | None = None
 
 
 @router.get("/me")
@@ -66,7 +103,7 @@ async def get_pet(
     pet_logic.apply_decay(pet)
     await session.commit()
     await session.refresh(pet)
-    return pet_logic.pet_to_dict(pet)
+    return _serialize_pet(pet)
 
 
 @router.post("/pet/sync")
@@ -85,6 +122,17 @@ async def sync_pet(
     pet.energy = round(payload.stats.energy)
     pet.cleanliness = round(payload.stats.cleanliness)
     pet.last_update = datetime.now(timezone.utc)
+
+    if "sleep_until" in payload.model_fields_set:
+        pet.sleep_until = _as_utc(payload.sleep_until)
+    if "sleep_started_at" in payload.model_fields_set:
+        pet.sleep_started_at = _as_utc(payload.sleep_started_at)
+    if "sleep_gain" in payload.model_fields_set:
+        pet.sleep_gain = payload.sleep_gain
+    if "night_sleep_start" in payload.model_fields_set:
+        pet.night_sleep_start = _as_utc(payload.night_sleep_start)
+    if "night_sleep_wake" in payload.model_fields_set:
+        pet.night_sleep_wake = _as_utc(payload.night_sleep_wake)
 
     items = (
         await session.execute(
@@ -108,7 +156,7 @@ async def sync_pet(
 
     return {
         "ok": True,
-        "stats": pet_logic.pet_to_dict(pet),
+        "stats": _serialize_pet(pet),
         "equipped_item_id": equipped_item.item_id if equipped_item else None,
     }
 
