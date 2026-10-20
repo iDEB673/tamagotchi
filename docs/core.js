@@ -183,7 +183,7 @@
         }
     }
 
-    function finishNightSleep(hours) {
+    async function finishNightSleep(hours) {
         const before = state.nightSleepEnergyBefore || 0;
         const restored = Math.min(100, Math.round(before + hours * 30));
         state.stats.energy = restored;
@@ -195,6 +195,7 @@
         state.nightSleepWake = null;
         state.nightSleepEnergyBefore = 0;
         save();
+        await pushStatsToServer();
     }
 
     const $ = (id) => document.getElementById(id);
@@ -256,7 +257,7 @@
         return h >= 22 || h < 1;
     }
 
-    function tryWakeUp() {
+    async function tryWakeUp() {
         if (!state.nightSleepStart) return;
         const now = Date.now();
         const hours = (now - state.nightSleepStart) / 3600000;
@@ -266,10 +267,10 @@
             return;
         }
         if (!confirm("Разбудить? Энергия восстановится частично.")) return;
-        finishNightSleep(hours);
+        await finishNightSleep(hours);
         render();
         if (tg) tg.HapticFeedback?.notificationOccurred("success");
-        pushStatsToServer();
+        await pushStatsToServer();
     }
 
     function checkAchievements() {
@@ -507,6 +508,12 @@
     function pushStatsToServer() {
         if (!isOnline()) return Promise.resolve();
 
+        const toIso = (value) => {
+            if (value === null || value === undefined) return null;
+            const date = new Date(value);
+            return Number.isNaN(date.getTime()) ? null : date.toISOString();
+        };
+
         const payload = JSON.stringify({
             stats: {
                 hunger: state.stats.hunger,
@@ -515,6 +522,11 @@
                 cleanliness: state.stats.cleanliness,
             },
             equipped_item_id: state.equipped || null,
+            sleep_until: toIso(state.sleepUntil),
+            sleep_started_at: toIso(state.sleepStartedAt),
+            sleep_gain: state.sleepGain ?? null,
+            night_sleep_start: toIso(state.nightSleepStart),
+            night_sleep_wake: toIso(state.nightSleepWake),
         });
 
         statsPushQueue = statsPushQueue.then(async () => {
@@ -913,7 +925,7 @@
         sleepModalEl.classList.remove("hidden");
     }
 
-    function startNightSleep() {
+    async function startNightSleep() {
         if (isSleeping()) return;
         state.nightSleepStart = Date.now();
         state.nightSleepWake = state.nightSleepStart + 8 * 3600 * 1000;
@@ -923,8 +935,9 @@
         sleepModalEl.classList.add("hidden");
         render();
         if (tg) tg.HapticFeedback?.notificationOccurred("success");
+        await pushStatsToServer();
     }
-    function startSleep(durationMs, gainRatio) {
+    async function startSleep(durationMs, gainRatio) {
         state.sleepUntil = Date.now() + durationMs;
         state.sleepGain = gainRatio;
         state.sleepStartedAt = Date.now();
@@ -934,6 +947,7 @@
         render();
         startSleepTicker();
         notifyServerSleep(durationMs);
+        await pushStatsToServer();
     }
     async function notifyServerSleep(durationMs) {
         const userId = tg?.initDataUnsafe?.user?.id;
@@ -1198,6 +1212,29 @@
             state.stats.happiness = pet.happiness;
             state.stats.energy = pet.energy;
             state.stats.cleanliness = pet.cleanliness;
+
+            const parseTime = (value) => {
+                if (value === null) return null;
+                if (value === undefined) return undefined;
+                const ts = new Date(value).getTime();
+                return Number.isNaN(ts) ? undefined : ts;
+            };
+
+            const sleepUntil = parseTime(pet.sleep_until);
+            if (sleepUntil !== undefined) state.sleepUntil = sleepUntil;
+
+            const sleepStartedAt = parseTime(pet.sleep_started_at);
+            if (sleepStartedAt !== undefined) state.sleepStartedAt = sleepStartedAt;
+
+            if (Object.prototype.hasOwnProperty.call(pet, "sleep_gain")) {
+                state.sleepGain = pet.sleep_gain === null ? null : Number(pet.sleep_gain);
+            }
+
+            const nightSleepStart = parseTime(pet.night_sleep_start);
+            if (nightSleepStart !== undefined) state.nightSleepStart = nightSleepStart;
+
+            const nightSleepWake = parseTime(pet.night_sleep_wake);
+            if (nightSleepWake !== undefined) state.nightSleepWake = nightSleepWake;
         } catch (e) { console.warn(e); }
 
         if (serverName && serverName.toLowerCase() !== "питомец") {
@@ -1208,6 +1245,10 @@
 
         save();
         render();
+
+        if (state.sleepUntil && state.sleepUntil > Date.now()) {
+            startSleepTicker();
+        }
 
         if (!state.petName) showOnboarding();
         else showGame();
