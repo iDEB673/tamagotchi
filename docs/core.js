@@ -1153,7 +1153,9 @@
 
     async function syncFromServer() {
         if (!isOnline()) return;
+        
         try { const me = await apiFetch("/api/me"); state.coins = me.coins; } catch (e) { console.warn(e); }
+        
         try {
             const data = await apiFetch("/api/inventory/granted");
             for (const it of data.items) {
@@ -1161,21 +1163,24 @@
                 if (it.equipped && !state.equipped) state.equipped = it.item_id;
             }
         } catch (e) { console.warn(e); }
+
         let serverName = null;
         try { 
             const pet = await apiFetch("/api/pet"); 
-            if (pet.name) serverName = pet.name; 
-        } catch (e) { 
-            console.warn(e); 
-        }
+            if (pet.name) serverName = pet.name;
+            
+            // БЕРЕМ СТАТЫ С СЕРВЕРА (а не отправляем свои)
+            if (pet.hunger !== undefined) {
+                state.stats.hunger = pet.hunger;
+                state.stats.happiness = pet.happiness;
+                state.stats.energy = pet.energy;
+                state.stats.cleanliness = pet.cleanliness;
+            }
+        } catch (e) { console.warn(e); }
 
         if (serverName && serverName.toLowerCase() !== "питомец") {
             state.petName = serverName;
-        } else if (serverName === null) {
-            // Сервер недоступен (или уснул) — НЕ трогаем локальное имя
-            console.warn("API недоступен, используем локальное имя:", state.petName);
         } else {
-            // Сервер ответил, и там дефолтное имя "Питомец"
             state.petName = null;
         }
         
@@ -1183,8 +1188,9 @@
         if (!state.petName) showOnboarding();
         else showGame();
         
-        // ПРИНУДИТЕЛЬНО ОТПРАВЛЯЕМ ЛОКАЛЬНЫЕ СТАТЫ НА СЕРВЕР ПРИ ЗАГРУЗКЕ
-        await syncStatsToServer();
+        // ОТПРАВЛЯЕМ НА СЕРВЕР ТОЛЬКО ЕСЛИ ИЗМЕНИЛОСЬ ЧТО-ТО ЛОКАЛЬНО (например, первый вход)
+        // Но теперь мы это делаем только при действиях, так что здесь убираем принудительный sync.
+        // await syncStatsToServer(); 
     }
 
     // ---------- Экспорт для остальных модулей ----------
