@@ -226,7 +226,6 @@
     const sleepModalEl = $("sleepModal");
     const adminPanelEl = $("adminPanel");
     const sleepBannerEl = $("sleepBanner");
-    const sleepTimerEl = $("sleepTimer");
     const nameInput = $("nameInput");
     const nameConfirm = $("nameConfirm");
     const petNameEl = $("petName");
@@ -450,7 +449,17 @@
                     const wakeBtn = $("wakeBtn");
                     if (wakeBtn) wakeBtn.addEventListener("click", tryWakeUp);
                 } else {
-                    banner.textContent = "😴 Спит · " + sleepTimerEl.textContent;
+                    let timerEl = banner.querySelector("#sleepTimer");
+                    if (!timerEl) {
+                        timerEl = document.createElement("span");
+                        timerEl.id = "sleepTimer";
+                        timerEl.textContent = "00:00";
+                        banner.replaceChildren(
+                            document.createTextNode("😴 Спит · "),
+                            timerEl
+                        );
+                    }
+                    updateSleepTimer();
                 }
             }
         } else {
@@ -1018,7 +1027,9 @@
                 const gain = state.sleepGain || 0;
                 applySleepDecay();
                 state.stats.energy = Math.max(0, Math.min(100, state.stats.energy + Math.round(gain * 100)));
-                state.sleepUntil = null; state.sleepGain = 0;
+                state.sleepUntil = null;
+                state.sleepGain = 0;
+                state.sleepStartedAt = null;
                 save(); render();
                 if (tg) tg.HapticFeedback?.notificationOccurred("success");
                 pushStatsToServer();
@@ -1031,10 +1042,12 @@
     }
     function updateSleepTimer() {
         if (!state.sleepUntil) return;
+        const timerEl = $("sleepTimer");
+        if (!timerEl) return;
         const left = Math.max(0, state.sleepUntil - Date.now());
         const t = Math.ceil(left / 1000);
         const m = Math.floor(t / 60), s = t % 60;
-        sleepTimerEl.textContent = `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+        timerEl.textContent = `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
     }
     $("sleepFast").addEventListener("click", () => startSleep(SLEEP_FAST_MS, SLEEP_FAST_GAIN));
     $("sleepDeep").addEventListener("click", () => startSleep(SLEEP_DEEP_MS, SLEEP_DEEP_GAIN));
