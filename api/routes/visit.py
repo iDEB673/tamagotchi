@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta, timezone
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -99,6 +101,18 @@ async def pet_friend_pet(
 
     pet, owner = await _get_pet_owner(target_user_id, session)
 
+    now = datetime.now(timezone.utc)
+    if pet.last_petted_at is not None:
+        last_petted_at = pet.last_petted_at
+        if last_petted_at.tzinfo is None:
+            last_petted_at = last_petted_at.replace(tzinfo=timezone.utc)
+        if now - last_petted_at < timedelta(hours=1):
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Слишком часто",
+            )
+
+    pet.last_petted_at = now
     pet.happiness = min(100, pet.happiness + 5)
     owner.coins += 1
 

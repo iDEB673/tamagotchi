@@ -87,11 +87,15 @@
                 heart.style.top = "45%";
                 stackEl.appendChild(heart);
                 setTimeout(() => heart.remove(), 1000);
-            } catch (e) {
+        } catch (e) {
+            if (e.message.includes("429")) {
+                App.notify("Ты уже гладил этого питомца недавно. Приходи через час!");
+            } else {
                 App.notify("Не удалось погладить: " + e.message);
-            } finally {
-                petBtn.disabled = false;
             }
+        } finally {
+            petBtn.disabled = false;
+        }
         };
     }
 

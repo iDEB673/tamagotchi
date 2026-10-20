@@ -23,6 +23,9 @@ class Pet(Base):
     energy: Mapped[int] = mapped_column(default=100)
     cleanliness: Mapped[int] = mapped_column(default=100)
     health: Mapped[int] = mapped_column(default=100)
+    last_petted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     last_update: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
