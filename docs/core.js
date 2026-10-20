@@ -563,46 +563,66 @@
         });
     }
 
-        // ---------- Поглаживание питомца ----------
+    // ---------- Поглаживание питомца ----------
     let lastPetTime = 0;
+    let petStreak = 0; // Счетчик подряд идущих поглаживаний
     const petEl = document.querySelector(".pet");
 
     if (petEl) {
         petEl.addEventListener("pointerdown", (e) => {
             if (isSleeping()) {
-                // Если спит, можно только шикнуть или ничего не делать
                 playSound("error", 0.1);
                 return; 
             }
 
             const now = Date.now();
-            if (now - lastPetTime < 1500) return; // Кулдаун 1.5 секунды
-            lastPetTime = now;
+            // Кулдаун 1 секунда (чтобы не спамили)
+            if (now - lastPetTime < 1000) return; 
 
-            // Звук и вибрация
-            playSound("pet", 0.3);
-            if (tg) tg.HapticFeedback?.impactOccurred("soft");
-
-            // Логика статов (если радость не максимум)
-            if (state.stats.happiness < 100) {
-                state.stats.happiness = Math.min(100, state.stats.happiness + 2);
-                save();
-                render();
+            // Если прошло больше 3 секунд с последнего поглаживания, сбрасываем злость
+            if (now - lastPetTime > 3000) {
+                petStreak = 0;
             }
 
-            // Визуальный эффект (сердечко)
+            petStreak++;
+            lastPetTime = now;
+
+            const isAngry = petStreak > 5;
+            const delta = isAngry ? -2 : 1;
+
+            // Меняем статы (не опускаем ниже 0)
+            state.stats.happiness = Math.max(0, Math.min(100, state.stats.happiness + delta));
+            save();
+            render();
+
+            // Звук и вибрация
+            if (isAngry) {
+                playSound("error", 0.4); // Недовольный звук
+                if (tg) tg.HapticFeedback?.notificationOccurred("warning");
+            } else {
+                playSound("pet", 0.3); // Довольный звук
+                if (tg) tg.HapticFeedback?.impactOccurred("soft");
+            }
+
+            // Визуальный эффект (сердечки или злые смайлы)
             const heart = document.createElement("div");
             heart.className = "floating-heart";
-            heart.textContent = ["❤️", "✨", "💖", "🌸"][Math.floor(Math.random() * 4)];
             
-            // Позиционируем сердечко там, где тапнули
+            const goodEmojis = ["❤️", "✨", "💖", "🌸"];
+            const angryEmojis = ["😡", "💢", "😤", "🤬"];
+            const list = isAngry ? angryEmojis : goodEmojis;
+            
+            heart.textContent = list[Math.floor(Math.random() * list.length)];
+            
+            // Позиционируем там, где тапнули
             const rect = petEl.getBoundingClientRect();
             heart.style.left = (e.clientX - rect.left - 15) + "px";
             heart.style.top = (e.clientY - rect.top - 15) + "px";
             
-            petEl.appendChild(heart);
+            // Если злой, делаем его чуть краснее (через CSS фильтр)
+            if (isAngry) heart.style.filter = "drop-shadow(0 0 5px red)";
             
-            // Удаляем сердечко через секунду
+            petEl.appendChild(heart);
             setTimeout(() => heart.remove(), 1000);
         });
     }
