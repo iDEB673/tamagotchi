@@ -970,6 +970,7 @@
             state.nightSleepStart = Date.now();
             state.nightSleepWake = state.nightSleepStart + 8 * 3600 * 1000;
             state.nightSleepEnergyBefore = state.stats.energy;
+            state.sleepGain = null;
             playSound("sleep", 0.7); // <--- ЗВУК СВЕРЧКОВ
             save();
             sleepModalEl.classList.add("hidden");

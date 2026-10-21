@@ -50,8 +50,14 @@ def process_sleep(pet: Pet, now: datetime | None = None) -> bool:
         if sleep_started_at is None:
             pet.energy = 100
         else:
-            hours = _sleep_hours(sleep_started_at, sleep_until, sleep_gain)
-            pet.energy = min(100, round(pet.energy + hours * 30))
+            # Если передан sleep_gain (быстрый/глубокий сон), используем проценты
+            if sleep_gain is not None:
+                pet.energy = min(100, round(pet.energy + sleep_gain * 100))
+            else:
+                # Иначе считаем по часам (30 в час)
+                hours = max(0.0, (sleep_until - sleep_started_at).total_seconds() / 3600)
+                pet.energy = min(100, round(pet.energy + hours * 30))
+        
         pet.sleep_until = None
         pet.sleep_started_at = None
         pet.sleep_gain = None
@@ -60,7 +66,9 @@ def process_sleep(pet: Pet, now: datetime | None = None) -> bool:
     night_sleep_wake = _to_utc(pet.night_sleep_wake)
     if night_sleep_wake is not None and now >= night_sleep_wake:
         night_sleep_start = _to_utc(pet.night_sleep_start)
-        hours = _sleep_hours(night_sleep_start, night_sleep_wake, sleep_gain)
+        hours = 0.0
+        if night_sleep_start is not None:
+            hours = max(0.0, (night_sleep_wake - night_sleep_start).total_seconds() / 3600)
         pet.energy = min(100, round(pet.energy + hours * 30))
         pet.night_sleep_start = None
         pet.night_sleep_wake = None
