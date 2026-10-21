@@ -178,7 +178,10 @@
 
         App.playSound("error");
         App.hapticImpact("heavy");
-        App.notify(`Игра окончена!\nСчёт: ${score}\nМонеты: +${reward}`);
+
+        $("snakeResultReward").textContent = `+${reward} 💰`;
+        $("snakeResultSub").textContent = `Счёт: ${score}`;
+        $("snakeResult").classList.remove("hidden");
 
         if (App.isOnline && App.isOnline()) {
             App.apiFetch("/api/game/reward", {
@@ -197,8 +200,6 @@
                 })
                 .catch((e) => console.warn("snake reward:", e));
         }
-
-        App.showGame();
     }
 
     function startGame() {
@@ -242,6 +243,7 @@
 
         if (state.stats.energy < ENERGY_COST) {
             App.notify(`Нужно ${ENERGY_COST} энергии.`);
+            $("snakeResult").classList.add("hidden");
             App.showGame();
             return;
         }
@@ -286,6 +288,16 @@
             button.addEventListener("click", () => {
                 startWithLevel(button.dataset.snakeLevel);
             });
+        });
+
+        $("snakeResultExit").addEventListener("click", () => {
+            $("snakeResult").classList.add("hidden");
+            App.showGame();
+        });
+
+        $("snakeResultRepeat").addEventListener("click", () => {
+            $("snakeResult").classList.add("hidden");
+            startWithLevel(currentSnakeLevel);
         });
 
         document.querySelectorAll(".dpad-btn").forEach((button) => {
