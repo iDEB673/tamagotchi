@@ -26,20 +26,32 @@ def _to_utc(value: datetime | None) -> datetime | None:
     return value.astimezone(timezone.utc)
 
 
+def _sleep_hours(
+    started_at: datetime | None,
+    wake_at: datetime,
+    gain: float | None = None,
+) -> float:
+    if started_at is not None:
+        return max(0.0, (wake_at - started_at).total_seconds() / 3600)
+    if gain is not None:
+        return max(1.0, gain * 100 / 30)
+    return 1.0
+
+
 def process_sleep(pet: Pet, now: datetime | None = None) -> bool:
     """Восстанавливает энергию за завершившиеся периоды сна."""
     now = _to_utc(now) or datetime.now(timezone.utc)
+    sleep_gain = pet.sleep_gain
     changed = False
 
     sleep_until = _to_utc(pet.sleep_until)
     if sleep_until is not None and now >= sleep_until:
         sleep_started_at = _to_utc(pet.sleep_started_at)
-        hours = 0.0
-        if sleep_started_at is not None:
-            hours = max(
-                0.0, (sleep_until - sleep_started_at).total_seconds() / 3600
-            )
-        pet.energy = min(100, round(pet.energy + hours * 30))
+        if sleep_started_at is None:
+            pet.energy = 100
+        else:
+            hours = _sleep_hours(sleep_started_at, sleep_until, sleep_gain)
+            pet.energy = min(100, round(pet.energy + hours * 30))
         pet.sleep_until = None
         pet.sleep_started_at = None
         pet.sleep_gain = None
@@ -48,15 +60,14 @@ def process_sleep(pet: Pet, now: datetime | None = None) -> bool:
     night_sleep_wake = _to_utc(pet.night_sleep_wake)
     if night_sleep_wake is not None and now >= night_sleep_wake:
         night_sleep_start = _to_utc(pet.night_sleep_start)
-        hours = 0.0
-        if night_sleep_start is not None:
-            hours = max(
-                0.0, (night_sleep_wake - night_sleep_start).total_seconds() / 3600
-            )
+        hours = _sleep_hours(night_sleep_start, night_sleep_wake, sleep_gain)
         pet.energy = min(100, round(pet.energy + hours * 30))
         pet.night_sleep_start = None
         pet.night_sleep_wake = None
         changed = True
+
+    if changed:
+        pet.last_update = now
 
     return changed
 
