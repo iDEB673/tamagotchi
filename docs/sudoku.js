@@ -321,7 +321,13 @@
             return;
         }
 
-        sdHistory.push({ r, c, prev: sdUserGrid[r][c], prevNotes: new Set(sdNotes[r][c]) });
+        const historyEntry = {
+            r,
+            c,
+            prev: sdUserGrid[r][c],
+            prevNotes: new Set(sdNotes[r][c]),
+        };
+        sdHistory.push(historyEntry);
         sdNotes[r][c].clear();
 
         if (n === 0) {
@@ -330,19 +336,23 @@
             return;
         }
 
-        // Конфликт — красная вспышка, потом убираем
-        if (sdIsConflict(r, c, n)) {
+        const isWrong = sdIsConflict(r, c, n) || n !== sdSolved[r][c];
+
+        if (isWrong) {
             App.playSound("error");
             App.hapticNotify("error");
             sdUserGrid[r][c] = n;
             sdRender();
 
-            // Найти ячейку и подсветить
+            const cellEl = $("sdGrid").children[r * 9 + c];
+            if (cellEl) cellEl.classList.add("sd-cell--wrong");
+
             setTimeout(() => {
                 if (!sdActive) return;
                 sdUserGrid[r][c] = 0;
-                sdNotes[r][c] = sdHistory[sdHistory.length - 1].prevNotes;
-                sdHistory.pop();
+                sdNotes[r][c] = historyEntry.prevNotes;
+                const historyIndex = sdHistory.lastIndexOf(historyEntry);
+                if (historyIndex !== -1) sdHistory.splice(historyIndex, 1);
                 sdMistakes++;
                 if (sdMistakes >= SD_LEVELS[sdCurrentLevel].maxMistakes) {
                     sdRender();
