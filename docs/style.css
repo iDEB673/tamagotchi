@@ -830,3 +830,62 @@ body.night-mode .header {
     0% { opacity: 1; transform: translateY(0) scale(1); }
     100% { opacity: 0; transform: translateY(-50px) scale(1.5); }
 }
+
+/* ---------- Змейка ---------- */
+
+.snake {
+    padding: 16px;
+    gap: 16px;
+    align-items: center;
+}
+
+.snake-container {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    max-width: 350px;
+}
+
+#snakeCanvas {
+    background: var(--bg-card);
+    border: 2px solid var(--bg);
+    border-radius: 12px;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+}
+
+.dpad {
+    display: grid;
+    grid-template-columns: repeat(3, 60px);
+    grid-template-rows: repeat(2, 60px);
+    gap: 8px;
+    justify-content: center;
+    margin-top: 10px;
+}
+
+.dpad-btn {
+    background: var(--bg-card);
+    border: none;
+    border-radius: 12px;
+    color: var(--text);
+    font-size: 24px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.1s, transform 0.1s;
+    user-select: none;
+    touch-action: manipulation;
+}
+
+.dpad-btn:active {
+    background: var(--accent);
+    transform: scale(0.95);
+}
+
+.dpad-up    { grid-column: 2; grid-row: 1; }
+.dpad-left  { grid-column: 1; grid-row: 2; }
+.dpad-down  { grid-column: 2; grid-row: 2; }
+.dpad-right { grid-column: 3; grid-row: 2; }
