@@ -14,9 +14,12 @@
     const GRID = 15;
     const CELL = 20;
     const ENERGY_COST = 10;
-    const START_SPEED = 150;
-    const MIN_SPEED = 70;
-    const SPEED_STEP = 5;
+
+    const LEVELS = {
+        easy: { start: 200, min: 120, step: 5 },
+        normal: { start: 150, min: 80, step: 5 },
+        hard: { start: 100, min: 50, step: 5 },
+    };
 
     const DIRECTIONS = {
         up: { x: 0, y: -1 },
@@ -34,6 +37,10 @@
         s: "down",
         a: "left",
         d: "right",
+        KeyW: "up",
+        KeyS: "down",
+        KeyA: "left",
+        KeyD: "right",
     };
 
     let App = null;
@@ -44,7 +51,8 @@
     let nextDirection = DIRECTIONS.right;
     let apple = null;
     let score = 0;
-    let speed = START_SPEED;
+    let currentSnakeLevel = "normal";
+    let speed = LEVELS.normal.start;
     let timerId = null;
     let active = false;
 
@@ -141,8 +149,9 @@
         const ate = apple && head.x === apple.x && head.y === apple.y;
 
         if (ate) {
+            const config = LEVELS[currentSnakeLevel] || LEVELS.normal;
             score += 10;
-            speed = Math.max(MIN_SPEED, speed - SPEED_STEP);
+            speed = Math.max(config.min, speed - config.step);
             apple = spawnApple();
             App.playSound("win");
             App.hapticImpact("light");
@@ -160,7 +169,7 @@
         active = false;
         stopTicker();
 
-        const reward = Math.max(0, Math.min(Math.floor(score / 2), 20));
+        const reward = Math.max(0, Math.min(Math.floor(score / 10), 20));
         const state = App.getState();
 
         state.coins += reward;
@@ -174,7 +183,11 @@
         if (App.isOnline && App.isOnline()) {
             App.apiFetch("/api/game/reward", {
                 method: "POST",
-                body: JSON.stringify({ game: "snake", score }),
+                body: JSON.stringify({
+                    game: "snake",
+                    score,
+                    level: currentSnakeLevel,
+                }),
             })
                 .then((res) => {
                     if (res && typeof res.coins === "number") {
@@ -189,8 +202,9 @@
     }
 
     function startGame() {
+        const config = LEVELS[currentSnakeLevel] || LEVELS.normal;
         score = 0;
-        speed = START_SPEED;
+        speed = config.start;
         direction = DIRECTIONS.right;
         nextDirection = DIRECTIONS.right;
         snake = [
@@ -206,7 +220,19 @@
         restartTicker();
     }
 
-    function openSnake() {
+    function openSnakeLevels() {
+        const state = App.getState();
+
+        if (state.sleepUntil && Date.now() < state.sleepUntil) {
+            App.notify("Питомец спит");
+            return;
+        }
+
+        App.hideAll();
+        $("snakeLevels").classList.remove("hidden");
+    }
+
+    function startWithLevel(level) {
         const state = App.getState();
 
         if (state.sleepUntil && Date.now() < state.sleepUntil) {
@@ -220,6 +246,7 @@
             return;
         }
 
+        currentSnakeLevel = LEVELS[level] ? level : "normal";
         state.stats.energy -= ENERGY_COST;
         App.save();
         if (App.pushStatsToServer) App.pushStatsToServer();
@@ -232,22 +259,34 @@
     function exitGame() {
         active = false;
         stopTicker();
-        App.showGame();
+        App.hideAll();
+        $("snakeLevels").classList.remove("hidden");
     }
 
     function onKeyDown(event) {
         if (!active || !isVisible()) return;
-        const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
-        const name = KEY_DIRECTIONS[key];
+
+        const keyName = event.key.length === 1
+            ? event.key.toLowerCase()
+            : event.key;
+        const name = KEY_DIRECTIONS[keyName] || KEY_DIRECTIONS[event.code];
         if (!name) return;
+
         event.preventDefault();
         setDirection(name);
         App.hapticImpact("light");
     }
 
     function bind() {
-        $("chooseSnake").addEventListener("click", openSnake);
+        $("chooseSnake").addEventListener("click", openSnakeLevels);
         $("snakeBack").addEventListener("click", exitGame);
+        $("snakeLevelsCancel").addEventListener("click", () => App.openGameChooser());
+
+        document.querySelectorAll(".level-btn[data-snake-level]").forEach((button) => {
+            button.addEventListener("click", () => {
+                startWithLevel(button.dataset.snakeLevel);
+            });
+        });
 
         document.querySelectorAll(".dpad-btn").forEach((button) => {
             button.addEventListener("click", () => {

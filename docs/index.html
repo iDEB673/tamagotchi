@@ -242,6 +242,37 @@
         </div>
     </div>
 
+    <!-- Выбор сложности Змейки -->
+    <div id="snakeLevels" class="screen onboarding hidden">
+        <div class="onboarding__content">
+            <div class="onboarding__emoji">🐍</div>
+            <h1 class="onboarding__title">Змейка — сложность</h1>
+            <p class="onboarding__text">Стоимость входа: <b>10 ⚡</b></p>
+            <button class="level-btn level-btn--easy" data-snake-level="easy">
+                <div class="level-btn__emoji">🟢</div>
+                <div class="level-btn__text">
+                    <div class="level-btn__title">Лёгкий</div>
+                    <div class="level-btn__sub">Медленная скорость · до +20 💰</div>
+                </div>
+            </button>
+            <button class="level-btn level-btn--normal" data-snake-level="normal">
+                <div class="level-btn__emoji">🟡</div>
+                <div class="level-btn__text">
+                    <div class="level-btn__title">Средний</div>
+                    <div class="level-btn__sub">Обычная скорость · до +20 💰</div>
+                </div>
+            </button>
+            <button class="level-btn level-btn--hard" data-snake-level="hard">
+                <div class="level-btn__emoji">🔴</div>
+                <div class="level-btn__text">
+                    <div class="level-btn__title">Сложный</div>
+                    <div class="level-btn__sub">Быстрая скорость · до +20 💰</div>
+                </div>
+            </button>
+            <button id="snakeLevelsCancel" class="onboarding__button onboarding__button--secondary">← Назад</button>
+        </div>
+    </div>
+
     <!-- Кликер: превью -->
     <div id="minigameIntro" class="screen onboarding hidden">
         <div class="onboarding__content">

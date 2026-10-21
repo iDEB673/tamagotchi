@@ -240,7 +240,7 @@ async def game_reward(
         else:
             reward = 0
     elif payload.game == "snake":
-        reward = min(max(payload.score, 0) // 2, 20)
+        reward = min(max(payload.score, 0) // 10, 20)
     elif payload.game == "casino":
         # Ограничиваем сверху, чтобы нельзя было накрутить читами
         reward = min(payload.score, 500)    
