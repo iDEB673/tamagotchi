@@ -7,16 +7,22 @@
     }
 
     let App = null;
+    let backScreenId = "menuScreen";
     const $ = (id) => document.getElementById(id);
 
     async function openGuestScreen(targetUserId) {
         const screen = $("guestScreen");
+        const friendsScreen = $("friendsScreen");
+        backScreenId = friendsScreen && !friendsScreen.classList.contains("hidden")
+            ? "friendsScreen"
+            : "menuScreen";
         const ownerEl = $("guestOwnerName");
         const spriteEl = $("guestPetSprite");
         const hatEl = $("guestPetHat");
         const stackEl = $("guestPetStack");
         const petBtn = $("guestPetBtn");
         const backBtn = $("guestBackBtn");
+        const addBtn = $("addFriendBtn");
 
         const setStat = (key, value) => {
             const clamped = Math.max(0, Math.min(100, value));
@@ -32,8 +38,9 @@
         };
 
         backBtn.onclick = () => {
-            $("menuScreen").classList.remove("hidden");
+            const backScreen = $(backScreenId);
             screen.classList.add("hidden");
+            if (backScreen) backScreen.classList.remove("hidden");
         };
 
         try {
@@ -61,6 +68,38 @@
                 hatEl.classList.add("hidden");
             }
 
+            // --- ПРОВЕРКА НА ДРУЖБУ ---
+            if (addBtn) {
+                try {
+                    const friendsData = await App.apiFetch("/api/friends");
+                    const isFriend = friendsData.friends.some(f => f.id === targetUserId);
+                    
+                    if (isFriend) {
+                        addBtn.style.display = "none";
+                    } else {
+                        addBtn.style.display = "block";
+                        addBtn.disabled = false;
+                        addBtn.textContent = "Добавить в друзья";
+                        addBtn.onclick = async () => {
+                            addBtn.disabled = true;
+                            addBtn.textContent = "Отправка...";
+                            try {
+                                await App.apiFetch(`/api/friends/request/${targetUserId}`, { method: "POST" });
+                                addBtn.textContent = "Запрос отправлен";
+                                App.notify("Запрос в друзья отправлен!");
+                            } catch (e) {
+                                addBtn.textContent = "Добавить в друзья";
+                                addBtn.disabled = false;
+                                App.notify(e.message.includes("409") ? "Запрос уже отправлен" : "Ошибка: " + e.message);
+                            }
+                        };
+                    }
+                } catch (e) {
+                    console.warn("Не удалось проверить дружбу:", e);
+                }
+            }
+            // --------------------------
+
             App.hideAll();
             screen.classList.remove("hidden");
         } catch (e) {
@@ -87,20 +126,23 @@
                 heart.style.top = "45%";
                 stackEl.appendChild(heart);
                 setTimeout(() => heart.remove(), 1000);
-        } catch (e) {
-            if (e.message.includes("429")) {
-                App.notify("Ты уже гладил этого питомца недавно. Приходи через час!");
-            } else {
-                App.notify("Не удалось погладить: " + e.message);
+            } catch (e) {
+                if (e.message.includes("429")) {
+                    App.notify("Ты уже гладил этого питомца недавно. Приходи через час!");
+                } else {
+                    App.notify("Не удалось погладить: " + e.message);
+                }
+            } finally {
+                petBtn.disabled = false;
             }
-        } finally {
-            petBtn.disabled = false;
-        }
         };
     }
 
     function bind() {
-        $("visitFriendBtn").addEventListener("click", async () => {
+        const visitFriendBtn = $("visitFriendBtn");
+        if (!visitFriendBtn) return;
+
+        visitFriendBtn.addEventListener("click", async () => {
             const name = $("guestNameInput").value.trim();
             if (!name) return App.notify("Введи имя питомца");
             
@@ -129,6 +171,7 @@
 
     async function init() {
         App = await waitForApp();
+        App.openGuestScreen = openGuestScreen;
         bind();
     }
 
