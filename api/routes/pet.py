@@ -13,38 +13,6 @@ from services import pet_logic
 router = APIRouter()
 
 
-def _as_utc(value: datetime | None) -> datetime | None:
-    if value is None:
-        return None
-    if value.tzinfo is None:
-        return value.replace(tzinfo=timezone.utc)
-    return value.astimezone(timezone.utc)
-
-
-def _serialize_pet(pet: Pet) -> dict:
-    data = pet_logic.pet_to_dict(pet)
-    sleep_until = _as_utc(pet.sleep_until)
-    sleep_started_at = _as_utc(pet.sleep_started_at)
-    night_sleep_start = _as_utc(pet.night_sleep_start)
-    night_sleep_wake = _as_utc(pet.night_sleep_wake)
-    data.update(
-        {
-            "sleep_until": sleep_until.isoformat() if sleep_until else None,
-            "sleep_started_at": (
-                sleep_started_at.isoformat() if sleep_started_at else None
-            ),
-            "sleep_gain": pet.sleep_gain,
-            "night_sleep_start": (
-                night_sleep_start.isoformat() if night_sleep_start else None
-            ),
-            "night_sleep_wake": (
-                night_sleep_wake.isoformat() if night_sleep_wake else None
-            ),
-        }
-    )
-    return data
-
-
 class ActionRequest(BaseModel):
     action: str
 
@@ -61,23 +29,6 @@ class GameRewardRequest(BaseModel):
     game: str
     score: int
     level: str | None = None
-
-
-class SyncStats(BaseModel):
-    hunger: float = Field(ge=0, le=100)
-    happiness: float = Field(ge=0, le=100)
-    energy: float = Field(ge=0, le=100)
-    cleanliness: float = Field(ge=0, le=100)
-
-
-class SyncRequest(BaseModel):
-    stats: SyncStats
-    equipped_item_id: str | None = None
-    sleep_until: datetime | None = None
-    sleep_started_at: datetime | None = None
-    sleep_gain: float | None = None
-    night_sleep_start: datetime | None = None
-    night_sleep_wake: datetime | None = None
 
 
 @router.get("/me")
@@ -100,66 +51,10 @@ async def get_pet(
     if pet is None:
         raise HTTPException(status_code=404, detail="Pet not found")
 
-    pet_logic.process_sleep(pet)
     pet_logic.apply_decay(pet)
     await session.commit()
     await session.refresh(pet)
-    return _serialize_pet(pet)
-
-
-@router.post("/pet/sync")
-async def sync_pet(
-    payload: SyncRequest,
-    user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_session),
-):
-    result = await session.execute(select(Pet).where(Pet.user_id == user.id))
-    pet = result.scalar_one_or_none()
-    if pet is None:
-        raise HTTPException(status_code=404, detail="Pet not found")
-
-    pet.hunger = round(payload.stats.hunger)
-    pet.happiness = round(payload.stats.happiness)
-    pet.energy = round(payload.stats.energy)
-    pet.cleanliness = round(payload.stats.cleanliness)
-    pet.last_update = datetime.now(timezone.utc)
-
-    if "sleep_until" in payload.model_fields_set:
-        pet.sleep_until = _as_utc(payload.sleep_until)
-    if "sleep_started_at" in payload.model_fields_set:
-        pet.sleep_started_at = _as_utc(payload.sleep_started_at)
-    if "sleep_gain" in payload.model_fields_set:
-        pet.sleep_gain = payload.sleep_gain
-    if "night_sleep_start" in payload.model_fields_set:
-        pet.night_sleep_start = _as_utc(payload.night_sleep_start)
-    if "night_sleep_wake" in payload.model_fields_set:
-        pet.night_sleep_wake = _as_utc(payload.night_sleep_wake)
-
-    items = (
-        await session.execute(
-            select(InventoryItem).where(InventoryItem.user_id == user.id)
-        )
-    ).scalars().all()
-
-    equipped_item = None
-    if payload.equipped_item_id is not None:
-        equipped_item = next(
-            (it for it in items if it.item_id == payload.equipped_item_id), None
-        )
-        if equipped_item is None:
-            raise HTTPException(status_code=400, detail="Item not owned")
-
-    for item in items:
-        item.equipped = item is equipped_item
-
-    await session.commit()
-    await session.refresh(pet)
-
-    return {
-        "ok": True,
-        "stats": _serialize_pet(pet),
-        "equipped_item_id": equipped_item.item_id if equipped_item else None,
-    }
+    return pet_logic.pet_to_dict(pet)
 
 
 @router.post("/pet/name")
@@ -175,9 +70,7 @@ async def set_pet_name(
         raise HTTPException(status_code=400, detail="Это имя зарезервировано")
 
     existing = await session.execute(
-        select(Pet.id)
-        .where(func.lower(Pet.name) == name.lower(), Pet.user_id != user.id)
-        .limit(1)
+        select(Pet).where(Pet.name == name, Pet.user_id != user.id)
     )
     if existing.scalar_one_or_none():
         raise HTTPException(
@@ -239,11 +132,11 @@ async def game_reward(
             reward = 50
         else:
             reward = 0
-    elif payload.game == "snake":
-        reward = min(max(payload.score, 0) // 10, 20)
+
     elif payload.game == "casino":
         # Ограничиваем сверху, чтобы нельзя было накрутить читами
         reward = min(payload.score, 500)    
+        
     else:
         raise HTTPException(400, f"Unknown game: {payload.game}")
     

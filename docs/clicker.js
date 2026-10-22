@@ -122,7 +122,6 @@
 
         state.gamesPlayed += 1;
         App.save();
-        App.pushStatsToServer();
 
         $("mgResultRepeat").disabled = state.stats.energy < ENERGY_COST;
         $("mgResult").classList.remove("hidden");
@@ -136,7 +135,6 @@
             if (state.stats.energy < ENERGY_COST) return;
             state.stats.energy -= ENERGY_COST;
             App.save();
-            App.pushStatsToServer();
             start();
         });
 
@@ -146,6 +144,7 @@
             if (!active) return;
             score += 1;
             $("mgScore").textContent = score;
+            App.playSound("click", 0.2);
             App.hapticImpact("light");
         });
 
@@ -156,7 +155,6 @@
             if (state.stats.energy < ENERGY_COST) return;
             state.stats.energy -= ENERGY_COST;
             App.save();
-            App.pushStatsToServer();
             $("mgResult").classList.add("hidden");
             start();
         });
