@@ -180,6 +180,9 @@
     async function sendFriendRequest() {
         const input = $("friendPetNameInput");
         const btn = $("sendFriendRequestBtn");
+
+        if (btn.disabled) return;
+
         const name = input.value.trim();
 
         if (!name) {
@@ -232,10 +235,20 @@
         document.querySelectorAll(".shop__tab[data-ftab]").forEach((tab) => {
             tab.addEventListener("click", () => setTab(tab.dataset.ftab));
         });
+
+        $("sendFriendRequestBtn").addEventListener("click", sendFriendRequest);
+
+        $("friendPetNameInput").addEventListener("keydown", (event) => {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                sendFriendRequest();
+            }
+        });
     }
 
     async function init() {
         App = await waitForApp();
+        window.App.openFriends = openFriends;
         bind();
     }
 
