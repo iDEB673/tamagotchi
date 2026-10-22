@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from api.routes import pet, scores, shop, sleep, visit
+from api.routes import friends, pet, scores, shop, sleep, visit
 from core.config import settings
 
 logger = logging.getLogger("wake")
@@ -30,6 +30,7 @@ app.add_middleware(
 )
 
 app.include_router(pet.router, prefix="/api")
+app.include_router(friends.router, prefix="/api")
 app.include_router(visit.router, prefix="/api")
 app.include_router(scores.router, prefix="/api")
 app.include_router(shop.router, prefix="/api")
