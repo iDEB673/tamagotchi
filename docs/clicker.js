@@ -108,6 +108,7 @@
         const subEl = $("mgResultSub");
 
         if (win) {
+            App.addHappiness(5);
             titleEl.textContent = "Ты выиграл:";
             rewardEl.textContent = `+${reward} 💰`;
             rewardEl.classList.remove("loss");

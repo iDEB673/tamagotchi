@@ -447,6 +447,7 @@
 
     function sdWin() {
         sdActive = false;
+        App.addHappiness(10);
         App.playSound("win"); 
         const time = sdStopTimer();
         const cfg = SD_LEVELS[sdCurrentLevel];

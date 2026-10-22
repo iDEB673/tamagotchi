@@ -293,6 +293,7 @@
         } catch (e) { console.warn(e); }
     }
     async function onGameOver() {
+        App.addHappiness(-3);
         const coins = await finishAndReward();
         if (infinite) { await submitInfiniteScore(); infinite = false; }
         $("bbResultReward").textContent = `+${coins} 💰`;
@@ -300,6 +301,7 @@
         $("bbResult").classList.remove("hidden");
     }
     async function onWin() {
+        App.addHappiness(10);
         App.playSound("win");
         const coins = await finishAndReward();
         const winScore = LEVELS[level].winScore;

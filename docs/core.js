@@ -1328,6 +1328,12 @@
         getState: () => state,
         setState: (s) => { state = s; save(); },
         save, render, applySleepDecay,
+        addHappiness: (amount) => {
+            state.stats.happiness = Math.max(0, Math.min(100, state.stats.happiness + amount));
+            save();
+            render();
+            if (typeof pushStatsToServer === "function") pushStatsToServer();
+        },
         // UI
         hideAll, showGame, openGameChooser, showOnboarding,
         registerCleanup,

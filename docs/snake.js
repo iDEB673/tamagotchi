@@ -169,6 +169,8 @@
         active = false;
         stopTicker();
 
+        App.addHappiness(3);
+
         const reward = Math.max(0, Math.min(Math.floor(score / 10), 20));
         const state = App.getState();
 
