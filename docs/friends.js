@@ -142,6 +142,11 @@
 
         $("friendsList").style.display = tabName === "friends" ? "" : "none";
         $("requestsList").style.display = tabName === "requests" ? "" : "none";
+
+        const formBlock = $("requestFormBlock");
+        if (formBlock) {
+            formBlock.style.display = tabName === "requests" ? "block" : "none";
+        }
     }
 
     async function acceptRequest(id) {
@@ -170,6 +175,50 @@
         $("friendsScreen").classList.remove("hidden");
         setTab("friends");
         loadFriends();
+    }
+    
+    async function sendFriendRequest() {
+        const input = $("friendPetNameInput");
+        const btn = $("sendFriendRequestBtn");
+        const name = input.value.trim();
+
+        if (!name) {
+            App.notify("Введи имя питомца");
+            return;
+        }
+
+        btn.disabled = true;
+        const originalText = btn.textContent;
+        btn.textContent = "...";
+
+        try {
+            // 1. Ищем питомца по имени
+            const searchRes = await App.apiFetch(`/api/visit/search/${encodeURIComponent(name)}`);
+            const targetId = searchRes.user_id;
+
+            // 2. Отправляем заявку
+            await App.apiFetch(`/api/friends/request/${targetId}`, {
+                method: "POST",
+            });
+
+            App.notify("Заявка отправлена!");
+            App.hapticNotify?.("success");
+            input.value = "";
+            await loadFriends();
+        } catch (e) {
+            if (e.message.includes("404")) {
+                App.notify("Питомец с таким именем не найден");
+            } else if (e.message.includes("409")) {
+                App.notify("Заявка уже отправлена или вы уже друзья");
+            } else if (e.message.includes("400")) {
+                App.notify("Это твой питомец 🙂");
+            } else {
+                App.notify("Ошибка: " + e.message);
+            }
+        } finally {
+            btn.disabled = false;
+            btn.textContent = originalText;
+        }
     }
 
     function bind() {
