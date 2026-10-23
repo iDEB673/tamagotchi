@@ -154,6 +154,14 @@
             subText = `В холодильник добавлено: ${prize.label}`;
         } else if (prize.type === "skin") {
             if (!state.owned.includes(skinId)) state.owned.push(skinId);
+
+            if (App.isOnline()) {
+                App.apiFetch("/api/inventory/grant", {
+                    method: "POST",
+                    body: JSON.stringify({ item_id: skinId }),
+                }).catch(e => console.warn("Не удалось сохранить скин на сервере:", e));
+            }
+
             consumeSkin();
             const item = App.SHOP_ITEMS[skinId];
             titleText = "🎁 РЕДКИЙ СКИН!";

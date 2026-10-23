@@ -66,6 +66,10 @@ class EquipRequest(BaseModel):
     item_id: str
 
 
+class GrantRequest(BaseModel):
+    item_id: str
+
+
 @router.get("/shop/items")
 async def list_items():
     """Список предметов для магазина (без special)."""
@@ -143,6 +147,36 @@ async def buy_item(
     await session.refresh(user)
 
     return {"ok": True, "coins": user.coins}
+
+
+@router.post("/inventory/grant")
+async def grant_item(
+    payload: GrantRequest,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    if payload.item_id not in SHOP_ITEMS:
+        raise HTTPException(404, "Item not found")
+
+    existing = await session.execute(
+        select(InventoryItem.id).where(
+            InventoryItem.user_id == user.id,
+            InventoryItem.item_id == payload.item_id,
+        )
+    )
+    if existing.scalar_one_or_none() is not None:
+        return {"ok": True}
+
+    session.add(
+        InventoryItem(
+            user_id=user.id,
+            item_id=payload.item_id,
+            equipped=False,
+        )
+    )
+    await session.commit()
+
+    return {"ok": True}
 
 
 @router.post("/inventory/equip")
