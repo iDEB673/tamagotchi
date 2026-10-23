@@ -30,14 +30,14 @@
 
     const $ = (id) => document.getElementById(id);
 
-    function getWeightedPrize() {
+    function getWeightedPrizeIndex() {
         const total = PRIZES.reduce((s, p) => s + p.weight, 0);
         let r = Math.random() * total;
-        for (const p of PRIZES) {
-            r -= p.weight;
-            if (r <= 0) return p;
+        for (let i = 0; i < PRIZES.length; i++) {
+            r -= PRIZES[i].weight;
+            if (r <= 0) return i;
         }
-        return PRIZES[0];
+        return 0;
     }
 
     function getNextSkin() {
@@ -92,16 +92,20 @@
         spinning = true;
         $("spinBtn").disabled = true;
 
-        // Выбираем приз
-        const prize = getWeightedPrize();
+        // Выбираем приз по весам
+        const winningIndex = getWeightedPrizeIndex();
+        const prize = PRIZES[winningIndex];
         let skinId = null;
         if (prize.type === "skin") {
             skinId = getNextSkin();
         }
 
-        // Определяем угол (сектор)
-        const sectorIndex = Math.floor(Math.random() * 8);
-        const targetAngle = currentRotation + 360 * 5 + (360 - sectorIndex * SECTOR_ANGLE);
+        // Ставим центр выигрышного сектора под верхнюю стрелку
+        const sectorCenter = winningIndex * SECTOR_ANGLE + SECTOR_ANGLE / 2;
+        const targetModulo = (360 - sectorCenter) % 360;
+        const currentModulo = currentRotation % 360;
+        const alignmentDelta = (targetModulo - currentModulo + 360) % 360;
+        const targetAngle = currentRotation + 360 * 5 + alignmentDelta;
         currentRotation = targetAngle;
 
         const wheel = $("wheel");
@@ -111,14 +115,15 @@
         // Ждём окончания анимации (4 сек)
         await new Promise(r => setTimeout(r, 4200));
 
-        // Начисляем награду
-        await grantPrize(prize, skinId);
+        // Начисляем именно тот приз, на котором остановилось колесо
+        await grantPrize(winningIndex, skinId);
 
         spinning = false;
         $("spinBtn").disabled = false;
     }
 
-    async function grantPrize(prize, skinId) {
+    async function grantPrize(winningIndex, skinId) {
+        const prize = PRIZES[winningIndex] || PRIZES[0];
         const state = App.getState();
         let titleText = "Пусто";
         let emoji = prize.emoji;
